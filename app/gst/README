@@ -1,0 +1,10 @@
+This program works on Freescale iMX6 board with fsl gstreamer plugins,
+because it needs VPU decoder/encoder.
+main.c version with left aligne toolbox and all four video windows grouped at right side.
+main_center.c version where OSD divided on four equal windows and each video centred in it's own window.
+
+before building please set appropriate streams in quad.sh
+and be sure that board accessible by ssh and set ip address in Makefile.rules
+
+then just
+# make all

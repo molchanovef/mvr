@@ -1,0 +1,55 @@
+-include ../Makefile.rules
+
+# -print-search-dirs
+SOURCES=$(wildcard *.c)
+OBJECTS=$(SOURCES:.c=.o)
+EXECUTABLE=mosaic
+SCRIPTS=mosaic.sh mosaic2.sh mosaic3.sh
+
+ifdef CROSS
+SYSROOTFS=/home/mef/iMX6/fsl-release-bsp/build-dfb/tmp/sysroots/imx6qsabresd
+CFLAGS += -DCROSS
+CFLAGS += -I${SYSROOTFS}/usr/include/gstreamer-0.10 \
+		 -I${SYSROOTFS}/usr/include/glib-2.0 \
+		 -I${SYSROOTFS}/usr/lib/glib-2.0/include \
+		 -I${SYSROOTFS}/usr/include/libxml2
+LDFLAGS = -lgstreamer-0.10 -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lxml2 -lglib-2.0 -pthread 
+else
+#run pkg-config --cflags gstreamer-0.10 to get CFLAGS
+CFLAGS += -pthread -I/usr/include/gstreamer-0.10 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/libxml2
+#run pkg-config --libs gstreamer-0.10 to get LDFLAGS
+LDFLAGS = -pthread -lgstreamer-0.10 -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lxml2 -lglib-2.0
+endif
+
+.PHONY : all build install clean target
+
+all: $(SOURCES) $(EXECUTABLE) install
+	
+$(EXECUTABLE): $(OBJECTS) 
+	@echo "---------- Build ${EXECUTABLE} application"
+ifdef CROSS
+	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+else
+	libtool --mode=link ${CC} -Wall `pkg-config --cflags --libs gstreamer-0.10` ${OBJECTS} -o $@
+endif
+
+.c.o:
+	@echo "---------- Build objects: ${OBJECTS}"
+	$(CC) $(CFLAGS) $< -o $@
+
+install:
+	@echo "---------- Install ${EXECUTABLE} application on ${INSTALL_DIR}"
+	@$ cp ${EXECUTABLE} ${INSTALL_DIR}
+	@$ cp ${SCRIPTS} ${INSTALL_DIR}
+ifdef CROSS
+	@echo "---------- Install ${EXECUTABLE} application on ${TARGET}"
+	-@$ sudo scp ${EXECUTABLE} ${TARGET}
+	-@$ sudo scp ${SCRIPTS} ${TARGET}
+endif
+
+clean:
+	@echo "---------- Remove ${EXECUTABLE} application"
+	@$ if [ -e ${EXECUTABLE} ]; then rm ${EXECUTABLE}; fi;
+	@echo "---------- Remove object files"
+	@$ rm -f *.o
+
