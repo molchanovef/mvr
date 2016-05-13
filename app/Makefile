@@ -4,9 +4,9 @@ TOP=$(shell pwd)
 
 SCRIPTS=$(wildcard scripts/*.sh)
 
-.PHONY : all pre clean gst mosaic record upload install xmlparse
+.PHONY : all pre clean gst mosaic record upload mvr install
 
-all: clean pre gst mosaic record upload xmlparse install
+all: clean pre gst mosaic record upload mvr install
 
 pre:
 	@mkdir -p ${TOP}/${BINARES}
@@ -19,6 +19,7 @@ clean:
 	@${MAKE} -C mosaic $@
 	@${MAKE} -C record $@
 	@${MAKE} -C upload $@
+	@${MAKE} -C mvr $@
 	
 gst:
 	@${MAKE} -C $@
@@ -32,7 +33,7 @@ upload:
 record:
 	@${MAKE} -C $@
 
-xmlparse:
+mvr:
 	@${MAKE} -C $@
 
 install:
@@ -40,6 +41,6 @@ install:
 	@${MAKE} -C mosaic $@
 	@${MAKE} -C record $@
 	@${MAKE} -C upload $@
-	@${MAKE} -C xmlparse $@
+	@${MAKE} -C mvr $@
 	@$ sudo scp ${SCRIPTS} ${TARGET}
 

@@ -13,31 +13,35 @@
 
 void print_help(char *argv)
 {
-	printf("Usage %s <rtsp url> <type(2,3) 2x2 or 3x3> <position 1-4 or 1-9> \n",argv);
+	printf("Usage %s <rtsp url> <type(2,3) 2x2 or 3x3> <position 1-4 or 1-9> <latency ms>\n",argv);
 }
 
 int main(int argc, char* argv[])
 {
-	int ret, pos, type;
+	int ret, pos, type, latency;
 	char url[1024] = {0};
 	char gst[1024] = {0};
 	int left, top, width, height;
 
-	if(argc < 3)
-	{
-		print_help(argv[0]);
-		pos = 1;
-		type = 2;
+	print_help(argv[0]);
+	if(argc < 2)
 		strcpy(url, URL);
-		printf("Default url %s and position %d\n",url,pos);
-	}	
 	else
-	{
-		type = atoi(argv[2]);
-		pos = atoi(argv[3]);
 		strcpy(url,argv[1]);
-		printf("url %s type %d position %d\n",url,type,pos);
-	}
+	if(argc < 3)
+		type = 2;
+	else
+		type = atoi(argv[2]);
+	if(argc < 4)
+		pos = 1;
+	else
+		pos = atoi(argv[3]);
+	if(argc < 5)
+		latency = 3000;
+	else
+		latency = atoi(argv[4]);
+
+	printf("url %s type %d position %d latency %d\n", url, type, pos, latency);
 #if 0
 	const gchar *nano_str;
 	guint major, minor, micro, nano;
@@ -95,13 +99,13 @@ int main(int argc, char* argv[])
 	{
 #ifdef CROSS
 		//																						1: I420
-		sprintf(gst,"gst-launch rtspsrc location=%s latency=500 ! gstrtpjitterbuffer ! rtph264depay\
-		 ! vpudec output-format=1 ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d &", url, left, top, width, height);
+		sprintf(gst,"gst-launch rtspsrc location=%s latency=%d ! gstrtpjitterbuffer ! rtph264depay\
+		 ! vpudec output-format=1 ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d &", url, latency, left, top, width, height);
 #else
 // gst-launch-0.10 rtspsrc location=rtsp://admin:admin@192.168.1.200/0 ! rtph264depay ! h264parse ! ffdec_h264 ! ffmpegcolorspace ! autovideosink
 /*		sprintf(gst,"gst-launch-0.10 rtspsrc location=%s ! rtph264depay ! h264parse ! ffdec_h264 !  videoscale ! ffmpegcolorspace ! v4l2sink \
 					crop-left=%d crop-top=%d crop-width=%d crop-height=%d&", url, left, top, width, height);
-*/		sprintf(gst,"gst-launch-0.10 rtspsrc location=%s latency=500 ! rtph264depay ! h264parse ! ffdec_h264 !  ffmpegcolorspace ! autovideosink &", url);
+*/		sprintf(gst,"gst-launch-0.10 rtspsrc location=%s latency=%d ! rtph264depay ! h264parse ! ffdec_h264 !  ffmpegcolorspace ! autovideosink &", url, latency);
 #endif
 		printf("%s\n",gst);
 		printf("sys %d\n",system(gst));

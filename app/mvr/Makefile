@@ -3,14 +3,14 @@
 # -print-search-dirs
 SOURCES=$(wildcard *.c)
 OBJECTS=$(SOURCES:.c=.o)
-EXECUTABLE=xmlparse
+EXECUTABLE=mvr
 SCRIPTS=xml.xml
 
 ifdef CROSS
 SYSROOTFS=/home/mef/iMX6/fsl-release-bsp/build-dfb/tmp/sysroots/imx6qsabresd
 CFLAGS += -DCROSS
 CFLAGS += -I${SYSROOTFS}/usr/include/libxml2
-LDFLAGS = -lxml2
+LDFLAGS = -lxml2 -pthread 
 else
 #run pkg-config --cflags gstreamer-0.10 to get CFLAGS
 CFLAGS += -I/usr/include/libxml2

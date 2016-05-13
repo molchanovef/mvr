@@ -1,0 +1,24 @@
+
+	parse xml to tmpfs
+	write to xml
+	#define tmpfs	/run
+	FILE *fd;
+	char	tmp[256];
+	char	fstr[256];
+
+	sprintf(tmp, "/run/MVR");
+	mkdir((const char*)tmp,0644);
+	sprintf(tmp, "/run/MVR");
+			sprintf(tmp,"%s/%s",tmp, name);
+			printf("mkdir %s\n",tmp);
+			mkdir((const char*)tmp,0644);
+			sprintf(fstr, "%s/rectime", tmp);
+			fd = fopen(fstr, "w");
+			fputs(rectime,fd);
+			fclose(fd);
+			xmlSetProp(cur, (const xmlChar*)"rectime", (const xmlChar*)"1200");
+			xmlSetProp(cur, (const xmlChar*)"latency", (const xmlChar*)"2000");
+//			xmlSetProp(cur, (const xmlChar*)"position", (const xmlChar*)"1");
+	xmlSaveFormatFileEnc( "output.xml", doc, "utf-8", 1 );	
+
+

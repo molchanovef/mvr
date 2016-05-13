@@ -269,7 +269,7 @@ int main(int argc, char* argv[])
 	gchar *descr;
 	GError *error = NULL;
 
-	print_help(argv[0]);
+//	print_help(argv[0]);
 	if(argc < 2)
 		duration = DURATION;
 	else
@@ -297,7 +297,7 @@ int main(int argc, char* argv[])
 		nano_str = "(Prerelease)";
 	else
 		nano_str = "";
-	g_print ("This program is linked against GStreamer %d.%d.%d %s\n", major, minor, micro, nano_str);
+//	g_print ("This program is linked against GStreamer %d.%d.%d %s\n", major, minor, micro, nano_str);
 
 	searcIPinURL(url, camFolder);
 	if(0 != createWorkFolder(workFolder))
@@ -392,7 +392,7 @@ Send EOS to appsrc pipeline
 void sig_handler(int signum)
 {
 	GstEvent* event;
-    g_print("Received signal %d\n", signum);
+    g_print("Record Received signal %d\n", signum);
     //Stop push data to appsrc
 	push_to_appsrc = FALSE;
 	//Don't create new pipeline
@@ -431,7 +431,7 @@ void searcIPinURL(char *url, char *camFolder)
 	{
 		*o++ = *p++;
 	}
-	g_print("TVH: record: %s IPCAM folder %s\n", __func__, camFolder);
+//	g_print("TVH: record: %s IPCAM folder %s\n", __func__, camFolder);
 }
 
 int createWorkFolder(char * workFolder)
