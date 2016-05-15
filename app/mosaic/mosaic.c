@@ -10,19 +10,61 @@
 #define BORDER	5//minimum 2 cause 1 pixel used for black border
 //#define URL "rtsp://admin:9999@192.168.11.94:8555/Stream2"
 #define URL	"rtsp://admin:admin@192.168.1.200/0"
+#define TAG		"MOSAIC"
+
+typedef struct _Mosaic
+{
+	GstElement 	*pipeline;
+	GMainLoop *main_loop;  /* GLib's Main Loop */
+	GstBus *bus;
+	guint bus_watch_id;
+} Mosaic;
 
 void print_help(char *argv)
 {
 	printf("Usage %s <rtsp url> <type(2,3) 2x2 or 3x3> <position 1-4 or 1-9> <latency ms>\n",argv);
 }
 
+static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer *ptr)
+{
+	Mosaic *h = (Mosaic*)ptr;
+	switch (GST_MESSAGE_TYPE (msg))
+	{
+		case GST_MESSAGE_ERROR:
+		{
+			gchar  *debug;
+			GError *error;
+			gst_message_parse_error (msg, &error, &debug);
+			g_printerr ("%s Error: %s\n", TAG, error->message);
+			g_error_free (error);
+			if (debug)
+			{
+				g_printerr ("%s [Debug details: %s]\n", TAG, debug);
+				g_free (debug);
+			}
+			g_main_loop_quit (h->main_loop);
+			break;
+		}
+		default:
+		break;
+	}
+	return TRUE;
+}
+
 int main(int argc, char* argv[])
 {
-	int ret, pos, type, latency;
+	int pos, type, latency;
+	char name[1024] = {0};
 	char url[1024] = {0};
-	char gst[1024] = {0};
 	int left, top, width, height;
-
+	const gchar *nano_str;
+	guint major, minor, micro, nano;
+	gchar *descr;
+	GError *error = NULL;
+	Mosaic *h;
+	
+	h = malloc(sizeof(Mosaic));
+	
 	print_help(argv[0]);
 	if(argc < 2)
 		strcpy(url, URL);
@@ -40,33 +82,10 @@ int main(int argc, char* argv[])
 		latency = 3000;
 	else
 		latency = atoi(argv[4]);
-
-	printf("url %s type %d position %d latency %d\n", url, type, pos, latency);
-#if 0
-	const gchar *nano_str;
-	guint major, minor, micro, nano;
-
-	gchar *descr;
-	GError *error = NULL;
-	GMainLoop *main_loop;  /* GLib's Main Loop */
-
-	/* Initialisation */
-	gst_init (&argc, &argv);
-
-	gst_version (&major, &minor, &micro, &nano);
-
-	if (nano == 1)
-		nano_str = "(CVS)";
-	else if (nano == 2)
-		nano_str = "(Prerelease)";
-	else
-		nano_str = "";
-
-	printf ("This program is linked against GStreamer %d.%d.%d %s\n",
-		  major, minor, micro, nano_str);
-
-	main_loop = g_main_loop_new (NULL, FALSE);
-#endif
+	if(argc == 6)
+		strcpy(name, argv[5]);
+		
+	printf("%s name %s url %s type %d position %d latency %d\n", TAG, name, url, type, pos, latency);
 	width = DW/type; height = DH/type;
 	if( type == 2 )
 	{
@@ -94,6 +113,64 @@ int main(int argc, char* argv[])
 		}
 
 	}
+
+	/* Initialisation */
+	gst_init (&argc, &argv);
+	gst_version (&major, &minor, &micro, &nano);
+
+	if (nano == 1)
+		nano_str = "(CVS)";
+	else if (nano == 2)
+		nano_str = "(Prerelease)";
+	else
+		nano_str = "";
+
+//	printf ("%s This program is linked against GStreamer %d.%d.%d %s\n", TAG, major, minor, micro, nano_str);
+
+	h->main_loop = g_main_loop_new (NULL, FALSE);
+
+#ifdef CROSS
+ 	descr = g_strdup_printf ("rtspsrc location=%s latency=%d ! gstrtpjitterbuffer ! rtph264depay ! vpudec output-format=1 ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", url, latency, left, top, width, height);
+#else
+ 	descr = g_strdup_printf ("rtspsrc location=%s latency=%d ! rtph264depay ! h264parse ! ffdec_h264 ! ffmpegcolorspace ! autovideosink", url, latency);
+#endif
+
+	h->pipeline = gst_parse_launch (descr, &error);
+	if (error == NULL)
+	{
+		/* we add a message handler */
+		h->bus = gst_pipeline_get_bus (GST_PIPELINE (h->pipeline));
+		h->bus_watch_id = gst_bus_add_watch (h->bus, bus_call, h);
+		gst_object_unref (h->bus);
+
+		/* Set the pipeline to "playing" state*/
+		g_print ("%s Now playing: %s (name %s)\n", TAG, url, name);
+		gst_element_set_state (h->pipeline, GST_STATE_PLAYING);
+
+		/* Iterate */
+		g_print ("%s Running...\n", TAG);
+		g_main_loop_run (h->main_loop);
+	}
+	else
+	{
+		g_print ("%s could not construct rtsp pipeline for %s: %s\n", TAG, url, error->message);
+		g_error_free (error);
+	}
+
+	/* Out of the main loop, clean up nicely */
+	g_print ("%s Returned, stopping playback for %s (name %s)\n", TAG, url, name);
+	gst_element_set_state (h->pipeline, GST_STATE_NULL);
+
+	g_print ("%s Deleting pipeline for %s (name %s)\n", TAG, url, name);
+	gst_object_unref (GST_OBJECT (h->pipeline));
+	g_source_remove (h->bus_watch_id);
+	g_main_loop_unref (h->main_loop);
+	free(h);
+	return 0;
+}
+#if 0
+	int ret;
+	char gst[1024] = {0};
 	ret = fork();
 	if(ret == 0)
 	{
@@ -114,4 +191,5 @@ int main(int argc, char* argv[])
 	if(ret < 0)
 		return -1;
 	return 0;
-}
+#endif
+

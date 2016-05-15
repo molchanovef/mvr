@@ -12,10 +12,10 @@ CFLAGS += -DCROSS
 CFLAGS += -I${SYSROOTFS}/usr/include/libxml2
 LDFLAGS = -lxml2 -pthread 
 else
-#run pkg-config --cflags gstreamer-0.10 to get CFLAGS
+#run pkg-config --cflags libxml-2.0 to get CFLAGS
 CFLAGS += -I/usr/include/libxml2
-#run pkg-config --libs gstreamer-0.10 to get LDFLAGS
-LDFLAGS = -lxml2
+#run pkg-config --libs libxml-2.0 to get LDFLAGS
+LDFLAGS = -lxml2 -pthread 
 endif
 
 .PHONY : all build install clean install
@@ -24,7 +24,8 @@ all: $(SOURCES) $(EXECUTABLE) install
 	
 $(EXECUTABLE): $(OBJECTS) 
 	@echo "---------- Build ${EXECUTABLE} application"
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+#BUG in ubuntu 14.04 LDFLAGS must be in the end
+	$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
 
 .c.o:
 	@echo "---------- Build objects: ${OBJECTS}"

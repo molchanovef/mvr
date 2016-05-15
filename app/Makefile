@@ -14,7 +14,7 @@ pre:
 	@mkdir -p ${TOP}/${BINARES}/${USER}/${ARCH}
 	
 clean:
-#	@rm -f ${TOP}/${BINARES}/${USER}/${ARCH}/*
+	@rm -f ${TOP}/${BINARES}/${USER}/${ARCH}/*
 	@${MAKE} -C gst $@
 	@${MAKE} -C mosaic $@
 	@${MAKE} -C record $@

@@ -22,15 +22,18 @@ typedef struct _Camera
 	char *rectime;
 	char *latency;
 	char *position;
+	char *mosaic;
 	pid_t recPid;
-	pid_t uplPid;
+	pid_t mosPid;
 } Camera;
 Camera	*camera[NUM_OF_CAM];
 
 void* control_func (void *arg);
 void sig_handler(int signum);
+int startRec(Camera *h);
+int startMos(Camera *h);
 
-void free_camera(void)
+void free_cameras(void)
 {
 	int i;
 	int ret;
@@ -46,16 +49,17 @@ void free_camera(void)
 				ret = kill(h->recPid, SIGINT);
 				printf("\tKill recPid [%d] return %d\n",h->recPid, ret);
 			}
-			if(h->uplPid != 0)
+			if(h->mosPid != 0)
 			{
-				kill(h->uplPid, SIGINT);
-				printf("\tKill uplPid [%d] return %d\n",h->uplPid, ret);
+				kill(h->mosPid, SIGINT);
+				printf("\tKill mosPid [%d] return %d\n",h->mosPid, ret);
 			}
 			free(h->name);
 			free(h->url);
 			free(h->recdir);
 			free(h->rectime);
 			free(h->latency);
+			free(h->mosaic);
 			free(h->position);
 			free(h);
 		}
@@ -95,9 +99,10 @@ int main(int argc, char **argv)
 			h->recdir		= (char*)xmlGetProp(cur, (const xmlChar*)"recdir");
 			h->rectime		= (char*)xmlGetProp(cur, (const xmlChar*)"rectime");
 			h->latency		= (char*)xmlGetProp(cur, (const xmlChar*)"latency");
+			h->mosaic	 	= (char*)xmlGetProp(cur, (const xmlChar*)"mosaic");
 			h->position 	= (char*)xmlGetProp(cur, (const xmlChar*)"position");
 			h->recPid		= 0;
-			h->uplPid		= 0;
+			h->mosPid		= 0;
 			camera[i] = h;
 
 		}
@@ -117,22 +122,13 @@ int main(int argc, char **argv)
 		if(camera[i] != NULL)
 		{
 			h = camera[i];
-			h->recPid = fork();
-			if(h->recPid == -1)
-			{
-				perror("fork"); /* произошла ошибка */
-				exit(1); /*выход из родительского процесса*/
-			}
-			if(h->recPid == 0)
-			{
-				execl("record", " ", h->rectime, h->recdir, h->url, NULL);
-				return 0;
-			}
+			startRec(h);
+			startMos(h);
 			printf("\tCamera[%d]: %s\n", i, h->name);
 			printf("\t\turl: %s\n", h->url);
 			printf("\t\trecdir: %s\n", h->recdir);
-			printf("\t\trectime: %s latency: %s position: %s\n", h->rectime, h->latency, h->position);
-			printf("\t\trecPid: %d uplPid: %d\n", h->recPid, h->uplPid);
+			printf("\t\trectime: %s latency: %s mosaic %s position: %s\n", h->rectime, h->latency, h->mosaic, h->position);
+			printf("\t\trecPid: %d mosPid: %d\n", h->recPid, h->mosPid);
 		}
 	}
 	
@@ -150,32 +146,26 @@ int main(int argc, char **argv)
 			if(camera[i] != NULL)
 			{
 				h = camera[i];
-//				printf("Camera[%d]: rec - %d upload - %d\n", i, h->recPid, h->uplPid);
+//				printf("Camera[%d]: rec - %d mosaic - %d\n", i, h->recPid, h->mosPid);
 				if(h->recPid)
 				{
 					retVal = kill(h->recPid, 0);
 //					printf("kill pid %d with 0 return %d\n", h->recPid, retVal);
 					if(retVal == -1)//restart recording
-					{
-						printf("\n\tTrying to restart recording for %s\n\n", h->name);
-						h->recPid = fork();
-						if(h->recPid == -1)
-						{
-							perror("fork"); /* произошла ошибка */
-							exit(1); /*выход из родительского процесса*/
-						}
-						if(h->recPid == 0)
-						{
-							execl("record", " ", h->rectime, h->recdir, h->url, NULL);
-							return 0;
-						}
-					}					
+						retVal = startRec(h);
+				}
+				if(h->mosPid)
+				{
+					retVal = kill(h->mosPid, 0);
+//					printf("kill pid %d with 0 return %d\n", h->mosPid, retVal);
+					if(retVal == -1)//restart mosaic
+						retVal = startMos(h);
 				}
 			}
 		}
 		usleep(1000000);
 	}
-	free_camera();
+	free_cameras();
 	xmlFreeDoc(doc);
 	return (0);
 }
@@ -219,3 +209,32 @@ void sig_handler(int signum)
 //    printf("\twait return %d\n", wstatus);
 }
 
+int startRec(Camera *h)
+{
+	h->recPid = fork();
+	if(h->recPid == -1)
+	{
+		perror("fork"); /* произошла ошибка */
+		exit(1); /*выход из родительского процесса*/
+	}
+	if(h->recPid == 0)
+	{
+		execl("record", " ", h->rectime, h->recdir, h->url, NULL);
+	}
+	return 0;
+}
+
+int startMos(Camera *h)
+{
+	h->mosPid = fork();
+	if(h->mosPid == -1)
+	{
+		perror("fork"); /* произошла ошибка */
+		exit(1); /*выход из родительского процесса*/
+	}
+	if(h->mosPid == 0)
+	{
+		execl("mosaic", " ", h->url, h->mosaic, h->position, h->latency, NULL);
+	}
+	return 0;
+}

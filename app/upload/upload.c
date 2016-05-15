@@ -26,7 +26,7 @@ void* control_func (void *arg);
 
 void print_help(char *argv)
 {
-	printf("Usage %s <duration> <base dir> <rtsp url>\n",argv);
+	printf("Usage %s <base_dir> <ftp_server> <ftp_user> <ftp_password>\n",argv);
 }
 
 void uploadToFTPServer(char *file)

@@ -16,6 +16,7 @@
 		recdir="/media/sda1/MVR"
 		rectime="60"
 		latency="500"
+		mosaic="2"
 		position="1">
 	</Camera>
 	<Camera
@@ -24,6 +25,7 @@
 		recdir="/media/sda1/MVR"
 		rectime="30"
 		latency="500"
+		mosaic="2"
 		position="2">
 	</Camera>
 	<Camera
@@ -32,6 +34,7 @@
 		recdir="/media/sda1/MVR"
 		rectime="60"
 		latency="500"
+		mosaic="2"
 		position="3">
 	</Camera>
 	<Camera
@@ -40,6 +43,7 @@
 		recdir="/media/sda1/MVR"
 		rectime="10"
 		latency="3000"
+		mosaic="2"
 		position="4">
 	</Camera>
 	<Camera
