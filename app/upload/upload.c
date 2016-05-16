@@ -165,11 +165,11 @@ int main (int argc, char *argv[])
 	if(argc < 2)
 		strcpy(baseDir, BASE_DIR);
 	else
-		strcpy(baseDir,argv[2]);
+		strcpy(baseDir,argv[1]);
 	if(argc < 3)
 		strcpy(ftpServer, FTP_SERVER);
 	else
-		strcpy(ftpServer, argv[3]);
+		strcpy(ftpServer, argv[2]);
 	if(argc < 4)
 		strcpy(ftpUser, FTP_USER);
 	else
@@ -177,7 +177,7 @@ int main (int argc, char *argv[])
 	if(argc < 5)
 		strcpy(ftpPasswd, FTP_PASSWD);
 	else
-		strcpy(ftpPasswd, argv[3]);
+		strcpy(ftpPasswd, argv[4]);
 
 	printf("baseDir (%s) FTP: server (%s), user (%s), passwd (%s)\n", baseDir, ftpServer, ftpUser, ftpPasswd);
 	

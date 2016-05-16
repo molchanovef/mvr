@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		sleep(1);
+		usleep(1000000);
 	}
 	free_cameras();
 	xmlFreeDoc(doc);
@@ -242,6 +242,7 @@ int startRec(Camera *h)
 	{
 		execl("record", " ", h->rectime, h->recdir, h->url, NULL);
 	}
+	sleep(1);
 	return 0;
 }
 
@@ -261,5 +262,6 @@ int startMos(Camera *h)
 			execl("mosaic", " ", h->url, h->mosaic, h->position, h->latency, NULL);
 		}
 	}
+	sleep(1);
 	return 0;
 }
