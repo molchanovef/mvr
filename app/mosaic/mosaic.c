@@ -10,7 +10,7 @@
 #define BORDER	5//minimum 2 cause 1 pixel used for black border
 //#define URL "rtsp://admin:9999@192.168.11.94:8555/Stream2"
 #define URL	"rtsp://admin:admin@192.168.1.200/0"
-#define TAG		"MOSAIC"
+#define TAG		"MOSAIC:"
 
 typedef struct _Mosaic
 {
@@ -19,6 +19,10 @@ typedef struct _Mosaic
 	GstBus *bus;
 	guint bus_watch_id;
 } Mosaic;
+
+Mosaic *mosaic;
+
+void sig_handler(int signum);
 
 void print_help(char *argv)
 {
@@ -64,6 +68,12 @@ int main(int argc, char* argv[])
 	Mosaic *h;
 	
 	h = malloc(sizeof(Mosaic));
+	if(h == NULL)
+	{
+		g_print("%s memory allocation error\n", TAG);
+		exit(1);
+	}
+	mosaic = h;
 	
 	print_help(argv[0]);
 	if(argc < 2)
@@ -113,6 +123,8 @@ int main(int argc, char* argv[])
 		}
 
 	}
+
+	signal(SIGINT, sig_handler);
 
 	/* Initialisation */
 	gst_init (&argc, &argv);
@@ -168,6 +180,16 @@ int main(int argc, char* argv[])
 	free(h);
 	return 0;
 }
+
+/*
+	Stop pipeline then received SIGINT
+*/
+void sig_handler(int signum)
+{
+    g_print("%s Received signal %d\n", TAG, signum);
+	g_main_loop_quit (mosaic->main_loop);
+}
+
 #if 0
 	int ret;
 	char gst[1024] = {0};

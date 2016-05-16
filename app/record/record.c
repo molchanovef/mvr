@@ -17,6 +17,7 @@
 #define BASE_DIR 		"/home/mef/Videos/MVR"
 #endif
 #define DURATION	10 //seconds
+#define TAG			"RECORD:"
 
 GstBuffer *SPSPacket;
 GMainLoop *main_loop;  /* GLib's Main Loop */
@@ -103,7 +104,7 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data)
 		}
 		case GST_MESSAGE_EOS:
 		{
-			g_print ("End of stream pipeline %d\n",(int)data);
+//			g_print ("End of stream pipeline %d\n",(int)data);
 			switch((int)data)
 			{
 				case 1:
@@ -472,14 +473,14 @@ int cpRecToFile(void)
 	char cmd[1024];
 	if(strlen(filename))
 	{
-		g_print("cp rec to filename created in previously call of run_pipeline_out\n");
-		g_print("recfile %s filename %s\n", recfile, filename);
+//		g_print("cp rec to filename created in previously call of run_pipeline_out\n");
+//		g_print("recfile %s filename %s\n", recfile, filename);
 		//cp recfile to filename
 //		ret = link(recfile, filename);
 //		if(ret != 0)
 //			printf("link return error %s(%d)\n",strerror(errno),errno);
 		sprintf(cmd, "cp %s %s", recfile, filename);
-		printf("%s: %s\n", __func__, cmd);
+//		printf("%s: %s\n", __func__, cmd);
 		ret = system(cmd);
 		if(ret != 0)
 			printf("system return error %s(%d)\n",strerror(errno),errno);

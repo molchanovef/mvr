@@ -9,7 +9,9 @@
 #include <signal.h>
 #include <pthread.h>
 
-#define NUM_OF_CAM		32
+#define CAM_NUM		32
+#define WIFI_NUM	32
+#define TAG			"MVR:"
 
 pthread_t pth_control;
 int run;
@@ -26,7 +28,15 @@ typedef struct _Camera
 	pid_t recPid;
 	pid_t mosPid;
 } Camera;
-Camera	*camera[NUM_OF_CAM];
+Camera	*camera[CAM_NUM] = {NULL};
+
+typedef struct _Wifi
+{
+	char *ssid;
+	char *password;
+} Wifi;
+
+Wifi *wifi[WIFI_NUM] = {NULL};
 
 void* control_func (void *arg);
 void sig_handler(int signum);
@@ -38,11 +48,11 @@ void free_cameras(void)
 	int i;
 	int ret;
 	Camera *h;
-	for(i = 0; i < NUM_OF_CAM; i++)
+	for(i = 0; i < CAM_NUM; i++)
 	{
 		if(camera[i] != NULL)
 		{
-			printf("\n\tFree camera[%d]\n",i);
+			printf("\n\t%s Free camera[%d]\n", TAG, i);
 			h = camera[i];
 			if(h->recPid != 0)
 			{
@@ -68,9 +78,9 @@ void free_cameras(void)
 
 int main(int argc, char **argv)
 {
-    char *ssid, *password;
-    int i;
-	Camera *h;
+    int 	i;
+	Camera	*h;
+	Wifi	*w;
 	int retVal;
 	
     if (argc < 2) {
@@ -88,10 +98,9 @@ int main(int argc, char **argv)
 	while (cur != NULL)
 	{
 //    	fprintf(stdout, "Child is <%s> (%i)\n", cur->name, cur->type);
-
 		if ((!xmlStrcmp(cur->name, (const xmlChar *)"Camera")))
 		{
-			for(i = 0; i < NUM_OF_CAM; i++)
+			for(i = 0; i < CAM_NUM; i++)
 				if(camera[i] == NULL) break;
 			h = malloc(sizeof(Camera));
 			h->name			= (char*)xmlGetProp(cur, (const xmlChar*)"name");
@@ -103,45 +112,56 @@ int main(int argc, char **argv)
 			h->position 	= (char*)xmlGetProp(cur, (const xmlChar*)"position");
 			h->recPid		= 0;
 			h->mosPid		= 0;
-			camera[i] = h;
-
+			camera[i] 		= h;
 		}
 		if ((!xmlStrcmp(cur->name, (const xmlChar *)"WiFi")))
 		{
-			ssid =		(char*)xmlGetProp(cur, (const xmlChar*)"ssid");
-			password =	(char*)xmlGetProp(cur, (const xmlChar*)"password");
-			printf("\tWiFi: %s password %s\n", ssid, password);
+			for(i = 0; i < WIFI_NUM; i++)
+				if(wifi[i] == NULL) break;
+			w = malloc(sizeof(Wifi));
+			w->ssid 	= (char*)xmlGetProp(cur, (const xmlChar*)"ssid");
+			w->password = (char*)xmlGetProp(cur, (const xmlChar*)"password");
+			wifi[i] 	= w;
 		}
 		cur = cur->next;
 	}
 	
 	signal(SIGCHLD, sig_handler);
 
-	for(i = 0; i < NUM_OF_CAM; i++)
+	for(i = 0; i < CAM_NUM; i++)
 	{
 		if(camera[i] != NULL)
 		{
 			h = camera[i];
 			startRec(h);
 			startMos(h);
-			printf("\tCamera[%d]: %s\n", i, h->name);
+			printf("\t%s Camera[%d]: %s\n", TAG, i, h->name);
 			printf("\t\turl: %s\n", h->url);
 			printf("\t\trecdir: %s\n", h->recdir);
 			printf("\t\trectime: %s latency: %s mosaic %s position: %s\n", h->rectime, h->latency, h->mosaic, h->position);
 			printf("\t\trecPid: %d mosPid: %d\n", h->recPid, h->mosPid);
 		}
 	}
+
+	for(i = 0; i < WIFI_NUM; i++)
+	{
+		if(wifi[i] != NULL)
+		{
+			w = wifi[i];
+			printf("\t%s WiFi: %s password %s\n", TAG, w->ssid, w->password);
+		}
+	}
 	
 	run = 1;
 	retVal = pthread_create(&pth_control, NULL, &control_func, argv[0]);
 	if (retVal != 0)
-		printf("\ncan't create thread :[%s]", strerror(retVal));
+		printf("\n%s can't create thread :[%s]", TAG, strerror(retVal));
 	else
-	    printf("\n Control thread created successfully\n");
+	    printf("\n%s Control thread created successfully\n", TAG);
 
 	while(run)
 	{
-		for(i = 0; i < NUM_OF_CAM; i++)
+		for(i = 0; i < CAM_NUM; i++)
 		{
 			if(camera[i] != NULL)
 			{
@@ -163,7 +183,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		usleep(1000000);
+		sleep(1);
 	}
 	free_cameras();
 	xmlFreeDoc(doc);
@@ -211,6 +231,7 @@ void sig_handler(int signum)
 
 int startRec(Camera *h)
 {
+	printf("\n\t%s Start recordig for camera %s\n", TAG, h->name);
 	h->recPid = fork();
 	if(h->recPid == -1)
 	{
@@ -226,15 +247,19 @@ int startRec(Camera *h)
 
 int startMos(Camera *h)
 {
-	h->mosPid = fork();
-	if(h->mosPid == -1)
+	if(h->mosaic && h->position)
 	{
-		perror("fork"); /* произошла ошибка */
-		exit(1); /*выход из родительского процесса*/
-	}
-	if(h->mosPid == 0)
-	{
-		execl("mosaic", " ", h->url, h->mosaic, h->position, h->latency, NULL);
+		printf("\n\t%s Start mosaic for camera %s\n", TAG, h->name);
+		h->mosPid = fork();
+		if(h->mosPid == -1)
+		{
+			perror("fork"); /* произошла ошибка */
+			exit(1); /*выход из родительского процесса*/
+		}
+		if(h->mosPid == 0)
+		{
+			execl("mosaic", " ", h->url, h->mosaic, h->position, h->latency, NULL);
+		}
 	}
 	return 0;
 }
