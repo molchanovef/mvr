@@ -242,7 +242,7 @@ int startRec(Camera *h)
 	{
 		execl("record", " ", h->rectime, h->recdir, h->url, NULL);
 	}
-	sleep(1);
+//	sleep(1);
 	return 0;
 }
 
@@ -262,6 +262,6 @@ int startMos(Camera *h)
 			execl("mosaic", " ", h->url, h->mosaic, h->position, h->latency, NULL);
 		}
 	}
-	sleep(1);
+//	sleep(1);
 	return 0;
 }

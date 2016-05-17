@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+	<!--
+	Camera element: 
+		name		- Camera name for create directory fo record fies
+		url			- rtsp stream url 
+		rectime		- time in seconds to split video stream to separate files
+		latency		- gstreamer rtsp element parameter.
+		position	- position in mosaic 2x2			3x3
+	WiFi element:
+		ssid, password.
+	-->
+<MVR>
+	<Camera
+		name="Dome_Gray"
+		url="rtsp://admin:admin@192.168.1.200/0"
+		recdir="/media/sda1/MVR"
+		rectime="60"
+		latency="500"
+		mosaic="2"
+		position="1">
+	</Camera>
+	<Camera
+		name="Dome_White"
+		url="rtsp://192.168.1.10/user=admin_password=tlJwpbo6_channel=1_stream=0.sdp?real_stream"
+		recdir="/media/sda1/MVR"
+		rectime="30"
+		latency="500"
+		mosaic="2"
+		position="2">
+	</Camera>
+	<Camera
+		name="Ivideon_Stream_1"
+		url="rtsp://admin:9999@192.168.11.94:8554/Stream1"
+		recdir="/media/sda1/MVR"
+		rectime="60"
+		latency="500"
+		mosaic="2"
+		position="3">
+	</Camera>
+	<Camera
+		name="Ivideon_Stream_2"
+		url="rtsp://admin:9999@192.168.11.94:8555/Stream2"
+		recdir="/media/sda1/MVR"
+		rectime="10"
+		latency="3000"
+		mosaic="2"
+		position="4">
+	</Camera>
+<!--	<Camera
+		name="Camera_168"
+		url="rtsp://admin:9999@192.168.1.168:8554/Stream1"
+		recdir="/media/sda1/MVR"
+		rectime="60"
+		latency="3000">
+	</Camera> -->
+	<WiFi
+		ssid="TvHelp_CCTV"
+		password="SMikhail">
+	</WiFi>
+	<WiFi
+		ssid="MEF"
+		password="brigantina">
+	</WiFi>
+	<WiFi
+		ssid="vit"
+		password="1234567890">
+	</WiFi>
+</MVR>
