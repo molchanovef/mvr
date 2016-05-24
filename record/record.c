@@ -21,11 +21,15 @@
 
 GstBuffer *SPSPacket;
 GMainLoop *main_loop;  /* GLib's Main Loop */
-GstElement 	*pipeline, *rtspsrc, *appsink;
-GstElement	*pipeline_out, *appsrc, *filesink;
+GstElement 	*pipeline, *rtspsrc, *vsink;
+GstElement	*pipeline_out, *vsrc, *filesink;
+#ifdef AUDIO
+GstElement  *asrc, *asink, *alsasrc, *mp3enc;
+gboolean push_to_asrc = FALSE;
+#endif
 GstBus *bus;
 guint bus_watch_id;
-gboolean push_to_appsrc = FALSE;
+gboolean push_to_vsrc = FALSE;
 gboolean signal_received = FALSE;
 
 struct timespec tstart, tcurr;
@@ -62,15 +66,20 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data)
 		{
 			GstState old_state, new_state;
 			gst_message_parse_state_changed (msg, &old_state, &new_state, NULL);
-			if(strcmp(GST_OBJECT_NAME (msg->src), "appsrc") == 0)
+			if(strcmp(GST_OBJECT_NAME (msg->src), "vsrc") == 0)
 			{
-//					g_print("appsrc changed from %s %s\n",
+//					g_print("vsrc changed from %s %s\n",
 //							gst_element_state_get_name (old_state),
 //							gst_element_state_get_name (new_state));
 				if(old_state == GST_STATE_PLAYING && new_state == GST_STATE_PAUSED)
 				{
 					gst_element_set_state (pipeline_out, GST_STATE_NULL);
-					gst_object_unref (GST_OBJECT (appsrc));
+					gst_object_unref (GST_OBJECT (vsrc));
+#ifdef AUDIO
+					gst_object_unref (GST_OBJECT (asrc));
+					gst_object_unref (GST_OBJECT (alsasrc));
+					gst_object_unref (GST_OBJECT (mp3enc));
+#endif
 					gst_object_unref (GST_OBJECT (filesink));
 					gst_object_unref (GST_OBJECT (pipeline_out));
 					pipeline_out = NULL;
@@ -98,7 +107,12 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data)
 				}
 
 				if(old_state == GST_STATE_PAUSED && new_state == GST_STATE_PLAYING)
-					push_to_appsrc = TRUE;
+				{
+					push_to_vsrc = TRUE;
+#ifdef AUDIO
+					push_to_asrc = TRUE;
+#endif
+				}
 			}
 			break;
 		}
@@ -111,7 +125,12 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data)
 					g_main_loop_quit (main_loop);
 				break;
 				case 2:
-					gst_element_set_state (appsrc, GST_STATE_PAUSED);
+					gst_element_set_state (vsrc, GST_STATE_PAUSED);
+#ifdef AUDIO
+					gst_element_set_state (asrc, GST_STATE_PAUSED);
+					gst_element_set_state (alsasrc, GST_STATE_PAUSED);
+					gst_element_set_state (mp3enc, GST_STATE_PAUSED);
+#endif
 				break;				
 			}
 			break;
@@ -190,15 +209,29 @@ int run_pipeline_out()
 	}
 	else
 	{
-		descr = g_strdup_printf ("appsrc name=appsrc ! h264parse ! mp4mux ! filesink name=filesink");
-//		descr = g_strdup_printf ("appsrc name=appsrc ! tee name=t t. ! queue ! h264parse ! mp4mux ! filesink name=filesink  t. ! queue ! filesink location=%s",raw);
+//		Video to mp4 file
+		descr = g_strdup_printf ("appsrc name=vsrc ! h264parse ! mp4mux ! filesink name=filesink");
+//		video to mp4 file mp3 audio to alsasink
+//		descr = g_strdup_printf (" mp4mux name=mux ! filesink name=filesink appsrc name=vsrc ! h264parse ! queue ! mux.video_0 appsrc name=asrc typefind=true ! beepdec ! audioconvert ! alsasink");
+//		video with pcm audio to mp4 file
+//		descr = g_strdup_printf ("mp4mux name=mux ! filesink name=filesink appsrc name=vsrc ! h264parse ! queue ! mux.video_0 appsrc name=asrc ! audioparse ! caps=\"audio/x-raw-int, rate=(int)32000, channels=(int)1\" mfw_mp3encoder ! queue ! mux.audio_0");
+//		video with mic audio to mp4 file
+//		descr = g_strdup_printf ("mp4mux name=mux ! filesink name=filesink appsrc name=vsrc ! h264parse ! queue ! mux.video_0 alsasrc name=alsasrc ! caps=\"audio/x-raw-int, rate=(int)32000, channels=(int)1\" mfw_mp3encoder name=mp3enc ! queue ! mux.audio_0");
+//		video to mp4 file, audio to alsasink		
+//		descr = g_strdup_printf ("mp4mux name=mux ! filesink name=filesink appsrc name=vsrc ! h264parse ! queue ! mux. appsrc name=asrc ! queue ! decodebin ! audioconvert ! alsasink");
+//		descr = g_strdup_printf ("appsrc name=vsrc ! tee name=t t. ! queue ! h264parse ! mp4mux ! filesink name=filesink  t. ! queue ! filesink location=%s",raw);
 		pipeline_out = gst_parse_launch (descr, &error);
 		if (error != NULL) {
 			g_print ("could not construct out pipeline: %s\n", error->message);
 			g_error_free (error);
 			return -2;
 		}
-		appsrc = gst_bin_get_by_name(GST_BIN(pipeline_out), "appsrc");
+		vsrc = gst_bin_get_by_name(GST_BIN(pipeline_out), "vsrc");
+#ifdef AUDIO
+		asrc = gst_bin_get_by_name(GST_BIN(pipeline_out), "asrc");
+		alsasrc = gst_bin_get_by_name(GST_BIN(pipeline_out), "alsasrc");
+		mp3enc = gst_bin_get_by_name(GST_BIN(pipeline_out), "mp3enc");
+#endif
 		filesink = gst_bin_get_by_name(GST_BIN(pipeline_out), "filesink");
 		g_object_set (G_OBJECT (filesink), "location", recfile, NULL);
 	}
@@ -212,17 +245,20 @@ int run_pipeline_out()
 	if(!alarm)
 	{
 		clock_gettime(CLOCK_REALTIME, &tstart);
-		push_to_appsrc = TRUE;
+		push_to_vsrc = TRUE;
+#ifdef AUDIO
+		push_to_asrc = TRUE;
+#endif
 	}
 	return 0;
 }
 
-/* The appsink has received a buffer */
-static void new_buffer (GstElement *sink) {
+/* The vsink has received a buffer */
+static void new_video_buffer (GstElement *sink) {
 	GstBuffer *buffer;
 	GstFlowReturn ret = GST_FLOW_OK;
 
-	if(push_to_appsrc)
+	if(push_to_vsrc)
 	{
 		if(SPSPacket)//if SPS PPS packet was saved in previous pipeline
 		{
@@ -234,7 +270,7 @@ static void new_buffer (GstElement *sink) {
 		else
 		{
 			/* Retrieve the buffer */
-			g_signal_emit_by_name (appsink, "pull-buffer", &buffer, NULL);
+			g_signal_emit_by_name (vsink, "pull-buffer", &buffer, NULL);
 //			g_print ("*");
 		}
 		if (buffer)
@@ -246,22 +282,74 @@ static void new_buffer (GstElement *sink) {
 				if(isTimeout())
 				{
 					SPSPacket = gst_buffer_copy(buffer);
-					//send eos to appsrc of out pipeline
+					//send eos to vsrc of out pipeline
 					GstEvent* event = gst_event_new_eos();
-					gst_element_send_event (appsrc, event);
+					gst_element_send_event (vsrc, event);
 					gst_buffer_unref (buffer);
-					push_to_appsrc = FALSE;
+					push_to_vsrc = FALSE;
 					return;
 				}
 			}
-			/* Push the buffer into the appsrc */
-			g_signal_emit_by_name (appsrc, "push-buffer", buffer, &ret);
+			/* Push the buffer into the vsrc */
+			g_signal_emit_by_name (vsrc, "push-buffer", buffer, &ret);
 			if(ret != GST_FLOW_OK)
-				g_print("ERROR!!! Can't push buffer to appsrc (%d)\n",ret);
-			gst_buffer_unref (buffer);
+				g_print("ERROR!!! Can't push buffer to vsrc (%d)\n",ret);
+//			gst_buffer_unref (buffer);
 		}
 	}
 }
+#ifdef AUDIO
+/* The asink has received a buffer */
+static void new_audio_buffer (GstElement *sink) {
+	GstBuffer *buffer;
+	int outsize, i;
+	GstBuffer *outbuf;
+	GstFlowReturn ret = GST_FLOW_OK;
+	guint8 *p, *pout;
+	if(push_to_asrc)
+	{
+		/* Retrieve the buffer */
+		g_signal_emit_by_name (asink, "pull-buffer", &buffer, NULL);
+//			g_print ("^");
+		
+		if (buffer && asrc)
+		{
+//			if(stereo_buffer->data == NULL)
+			{
+				outsize = buffer->size * 2;
+//				g_print("size %d stereo_size %d\n", buffer->size, outsize);
+				outbuf = gst_buffer_new ();
+				GST_BUFFER_SIZE (outbuf) = outsize;
+				GST_BUFFER_MALLOCDATA (outbuf) = g_malloc (outsize);
+				GST_BUFFER_DATA (outbuf) = GST_BUFFER_MALLOCDATA (outbuf);
+			}
+			p = buffer->data;
+			pout= outbuf->data;
+			for(i = 0; i < 2; i++)
+			{
+				memcpy(pout, p, buffer->size);
+				pout += buffer->size;
+			}
+			if(isTimeout())
+			{
+				//send eos to asrc of out pipeline
+				GstEvent* event = gst_event_new_eos();
+				gst_element_send_event (asrc, event);
+				gst_buffer_unref (outbuf);
+				push_to_asrc = FALSE;
+				return;
+			}
+
+			/* Push the buffer into the asrc */
+			g_signal_emit_by_name (asrc, "push-buffer", outbuf, &ret);
+			if(ret != GST_FLOW_OK)
+				g_print("ERROR!!! Can't push buffer to asrc (%d)\n",ret);
+			gst_buffer_unref (outbuf);
+//			g_free(outbuf);
+		}
+	}
+}
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -305,8 +393,13 @@ int main(int argc, char* argv[])
 		return -1;
 
 	main_loop = g_main_loop_new (NULL, FALSE);
-
-	descr = g_strdup_printf ("rtspsrc name=rtspsrc location=%s ! gstrtpjitterbuffer ! rtph264depay ! appsink name=appsink", url);
+//	Video	
+		descr = g_strdup_printf ("rtspsrc name=rtspsrc location=%s ! gstrtpjitterbuffer ! rtph264depay ! appsink name=vsink", url);
+//	with mp3 audio
+//	descr = g_strdup_printf ("rtspsrc name=rtspsrc location=%s name=src ! gstrtpjitterbuffer ! rtph264depay ! appsink name=vsink src. ! rtpmpadepay ! appsink name=asink", url);
+//	with aac audio
+//	descr = g_strdup_printf ("rtspsrc name=rtspsrc location=%s ! gstrtpjitterbuffer ! rtph264depay ! appsink name=vsink rtspsrc. ! rtppcmudepay ! appsink name=asink", url);
+//	
 	pipeline = gst_parse_launch (descr, &error);
 	if (error != NULL) {
 		g_print ("could not construct rtsp pipeline for %s: %s\n",url, error->message);
@@ -314,10 +407,16 @@ int main(int argc, char* argv[])
 		goto finish;
 	}
 	rtspsrc = gst_bin_get_by_name(GST_BIN(pipeline), "rtspsrc");
-	appsink = gst_bin_get_by_name(GST_BIN(pipeline), "appsink");
-	/* Configure appsink */
-	g_object_set (appsink, "sync", FALSE, "max-buffers", "1000", "drop", FALSE, "emit-signals", TRUE, NULL);
-	g_signal_connect(appsink, "new-buffer", G_CALLBACK(new_buffer), NULL);
+	vsink = gst_bin_get_by_name(GST_BIN(pipeline), "vsink");
+	/* Configure vsink */
+	g_object_set (vsink, "sync", FALSE, "max-buffers", "1000", "drop", FALSE, "emit-signals", TRUE, NULL);
+	g_signal_connect(vsink, "new-buffer", G_CALLBACK(new_video_buffer), NULL);
+#ifdef AUDIO
+	asink = gst_bin_get_by_name(GST_BIN(pipeline), "asink");
+	/* Configure asink */
+	g_object_set (asink, "sync", FALSE, "max-buffers", "1000", "drop", FALSE, "emit-signals", TRUE, NULL);
+	g_signal_connect(asink, "new-buffer", G_CALLBACK(new_audio_buffer), NULL);
+#endif
 
 	/* we add a message handler */
 	bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
@@ -344,7 +443,10 @@ finish:
 	g_print ("Deleting pipeline\n");
 	gst_object_unref (GST_OBJECT (pipeline));
 	gst_object_unref (GST_OBJECT (rtspsrc));
-	gst_object_unref (GST_OBJECT (appsink));
+	gst_object_unref (GST_OBJECT (vsink));
+#ifdef AUDIO
+	gst_object_unref (GST_OBJECT (asink));
+#endif
 	g_source_remove (bus_watch_id);
 	g_main_loop_unref (main_loop);
 	unlink(recfile);
@@ -388,19 +490,25 @@ gboolean isTimeout()
 
 /*
 Get SIGINT for correct stop all pipelines
-Send EOS to appsrc pipeline 
+Send EOS to vsrc pipeline 
 */
 void sig_handler(int signum)
 {
 	GstEvent* event;
     g_print("Record Received signal %d\n", signum);
-    //Stop push data to appsrc
-	push_to_appsrc = FALSE;
+    //Stop push data to vsrc
+	push_to_vsrc = FALSE;
 	//Don't create new pipeline
     signal_received = TRUE;
-	//send eos to appsrc of out pipeline
+	//send eos to vsrc of out pipeline
 	event = gst_event_new_eos();
-	gst_element_send_event (appsrc, event);
+	gst_element_send_event (vsrc, event);
+#ifdef AUDIO
+	push_to_asrc = FALSE;
+	gst_element_send_event (asrc, event);
+	gst_element_send_event (alsasrc, event);
+	gst_element_send_event (mp3enc, event);
+#endif
 }
 
 void searcIPinURL(char *url, char *camFolder)

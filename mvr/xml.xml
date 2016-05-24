@@ -5,6 +5,7 @@
 		url			- rtsp stream url 
 		rectime		- time in seconds to split video stream to separate files
 		latency		- gstreamer rtsp element parameter.
+		mosaic		- mosaic typ 2 for 2x2 3 for 3x3.
 		position	- position in mosaic 2x2			3x3
 	WiFi element:
 		ssid, password.
