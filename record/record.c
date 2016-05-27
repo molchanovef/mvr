@@ -86,7 +86,7 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data)
 					
 					if(cpRecToFile() != 0)
 					{
-						g_print("rename rec fail. Exit.\n");
+						g_print("%s rename rec fail. Exit.\n", TAG);
 						g_main_loop_quit (main_loop);
 					}
 
@@ -99,7 +99,7 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data)
 					{
 						if(0 != run_pipeline_out())
 						{
-							g_print("could not construct out pipeline\n");
+							g_print("%s could not construct out pipeline\n", TAG);
 							//Stop main loop
 							g_main_loop_quit (main_loop);
 						}
@@ -118,7 +118,7 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data)
 		}
 		case GST_MESSAGE_EOS:
 		{
-//			g_print ("End of stream pipeline %d\n",(int)data);
+//			g_print ("%s End of stream pipeline %d\n", TAG, (int)data);
 			switch((int)data)
 			{
 				case 1:
@@ -176,20 +176,20 @@ int run_pipeline_out()
 		if( access( recfile, F_OK ) != -1 )
 		{
 			// file exists
-			g_print("!!! rec file exist !!!\n");
+			g_print("%s !!! rec file exist !!!\n", TAG);
 			sprintf(filename,"%s/%s",workFolder,"alarm");
 //			alarm = TRUE;
 			//save alarm file from previously incorrect session
 			ret = rename(recfile, filename);
 			if(ret != 0) return ret;
-			g_print("%s file from previously incorrect session saved\n",filename);
+			g_print("%s %s file from previously incorrect session saved\n",TAG, filename);
 		}
 	}
 
 	ret = createNewRecordFile(filename);
 	if (ret != 0)
 	{
-		g_print("Error create new record file\n");
+		g_print("%s Error create new record file\n", TAG);
 		return ret;
 	}
 
@@ -200,7 +200,7 @@ int run_pipeline_out()
 		descr = g_strdup_printf ("filesrc location=%s ! h264parse ! mp4mux ! filesink name=filesink", recfile);
 		pipeline_out = gst_parse_launch (descr, &error);
 		if (error != NULL) {
-			g_print ("could not construct out pipeline: %s\n", error->message);
+			g_print ("%S could not construct out pipeline: %s\n", TAG, error->message);
 			g_error_free (error);
 			return -2;
 		}
@@ -222,7 +222,7 @@ int run_pipeline_out()
 //		descr = g_strdup_printf ("appsrc name=vsrc ! tee name=t t. ! queue ! h264parse ! mp4mux ! filesink name=filesink  t. ! queue ! filesink location=%s",raw);
 		pipeline_out = gst_parse_launch (descr, &error);
 		if (error != NULL) {
-			g_print ("could not construct out pipeline: %s\n", error->message);
+			g_print ("%s could not construct out pipeline: %s\n", TAG, error->message);
 			g_error_free (error);
 			return -2;
 		}
@@ -240,7 +240,7 @@ int run_pipeline_out()
 	gst_object_unref (bus);
 
 	ret = gst_element_set_state (pipeline_out, GST_STATE_PLAYING);
-	g_print("Out pipeline %s (%d)\n", filename, ret);
+	g_print("%s Out pipeline %s (%d)\n", TAG, filename, ret);
 
 	if(!alarm)
 	{
@@ -293,7 +293,7 @@ static void new_video_buffer (GstElement *sink) {
 			/* Push the buffer into the vsrc */
 			g_signal_emit_by_name (vsrc, "push-buffer", buffer, &ret);
 			if(ret != GST_FLOW_OK)
-				g_print("ERROR!!! Can't push buffer to vsrc (%d)\n",ret);
+				g_print("%s ERROR!!! Can't push buffer to vsrc (%d)\n", TAG, ret);
 //			gst_buffer_unref (buffer);
 		}
 	}
@@ -343,7 +343,7 @@ static void new_audio_buffer (GstElement *sink) {
 			/* Push the buffer into the asrc */
 			g_signal_emit_by_name (asrc, "push-buffer", outbuf, &ret);
 			if(ret != GST_FLOW_OK)
-				g_print("ERROR!!! Can't push buffer to asrc (%d)\n",ret);
+				g_print("%s ERROR!!! Can't push buffer to asrc (%d)\n", TAG, ret);
 			gst_buffer_unref (outbuf);
 //			g_free(outbuf);
 		}
@@ -402,7 +402,7 @@ int main(int argc, char* argv[])
 //	
 	pipeline = gst_parse_launch (descr, &error);
 	if (error != NULL) {
-		g_print ("could not construct rtsp pipeline for %s: %s\n",url, error->message);
+		g_print ("%s could not construct rtsp pipeline for %s: %s\n", TAG, url, error->message);
 		g_error_free (error);
 		goto finish;
 	}
@@ -424,23 +424,23 @@ int main(int argc, char* argv[])
 	gst_object_unref (bus);
 	if(0 != run_pipeline_out())
 	{
-		g_print("could not construct out pipeline\n");
+		g_print("%s could not construct out pipeline\n", TAG);
 		goto finish;
 	}
 	/* Set the pipeline to "playing" state*/
-	g_print ("Now playing: %s duration %d baseDir %s\n", url, duration, baseDir);
+	g_print ("%s Now playing: %s duration %d baseDir %s\n", TAG, url, duration, baseDir);
 	gst_element_set_state (pipeline, GST_STATE_PLAYING);
 
 	/* Iterate */
-	g_print ("Running...\n");
+	g_print ("%s Running...\n", TAG);
 	g_main_loop_run (main_loop);
 	
 finish:
 	/* Out of the main loop, clean up nicely */
-	g_print ("Returned, stopping playback\n");
+	g_print ("%s Returned, stopping playback\n", TAG);
 	gst_element_set_state (pipeline, GST_STATE_NULL);
 
-	g_print ("Deleting pipeline\n");
+	g_print ("%s Deleting pipeline\n", TAG);
 	gst_object_unref (GST_OBJECT (pipeline));
 	gst_object_unref (GST_OBJECT (rtspsrc));
 	gst_object_unref (GST_OBJECT (vsink));
@@ -495,7 +495,7 @@ Send EOS to vsrc pipeline
 void sig_handler(int signum)
 {
 	GstEvent* event;
-    g_print("Record Received signal %d\n", signum);
+    g_print("%s Received signal %d\n", TAG, signum);
     //Stop push data to vsrc
 	push_to_vsrc = FALSE;
 	//Don't create new pipeline
@@ -529,7 +529,7 @@ void searcIPinURL(char *url, char *camFolder)
 	p = url;
 	if(index == 0)//search //
 	{
-		g_print("TVH: url %s without autorization\n", url);
+		g_print("%s url %s without autorization\n", TAG, url);
 		if(strncmp(url,"rtsp://",6) == 0)
 		{
 			index = 7;
@@ -540,7 +540,7 @@ void searcIPinURL(char *url, char *camFolder)
 	{
 		*o++ = *p++;
 	}
-//	g_print("TVH: record: %s IPCAM folder %s\n", __func__, camFolder);
+//	g_print("%s record: %s IPCAM folder %s\n", TAG, __func__, camFolder);
 }
 
 int createWorkFolder(char * workFolder)
@@ -591,7 +591,7 @@ int cpRecToFile(void)
 //		printf("%s: %s\n", __func__, cmd);
 		ret = system(cmd);
 		if(ret != 0)
-			printf("system return error %s(%d)\n",strerror(errno),errno);
+			printf("%s system return error %s(%d)\n", TAG, strerror(errno), errno);
 //		ret = rename(recfile, filename);
 	}
 	return ret;
@@ -615,7 +615,7 @@ void tvhIPCAMworkaround(GstBuffer *buffer)
 		if(buffer->data[i] == 0 && buffer->data[i+1] == 0 && buffer->data[i+2] == 0 && buffer->data[i+3] == 1 &&
 		   buffer->data[i+4] == 0 && buffer->data[i+5] == 0 && buffer->data[i+6] == 0 && buffer->data[i+7] == 1)
 		{
-			g_print("Tvhelp IPCAM PPS double '0 0 0 1' at (%d) position in first SPS packet\n",i);
+			g_print("%s Tvhelp IPCAM PPS double '0 0 0 1' at (%d) position in first SPS packet\n", TAG, i);
 			memcpy(&buffer->data[i],&buffer->data[i+4],buffer->size - i - 4);
 		}
 	}
@@ -630,12 +630,12 @@ void print_buffer(GstBuffer *buf)
 	int i;
 	if(buf)
 	{
-		g_print("Buffer size %d: ", buf->size);
+		g_print("%s Buffer size %d: ", TAG, buf->size);
 		for(i = 0; i < buf->size; i++)
 			g_print("%x ",buf->data[i]);
 		g_print("\n");
 	}
 	else
-		g_print("!!! Error !!! Buffer empty\n");
+		g_print("%s !!! Error !!! Buffer empty\n", TAG);
 }
 

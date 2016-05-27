@@ -15,6 +15,8 @@
 
 pthread_t pth_control;
 int run;
+int recEna, mosEna;
+char *filename;
 
 typedef struct _Camera
 {
@@ -76,21 +78,81 @@ void free_cameras(void)
 	}
 }
 
+void print_usage(char *arg)
+{
+	fprintf(stderr, "Usage: %s [OPTIONS] filename.xml\n", arg);
+	fprintf(stderr, "-r disable recording\n");
+	fprintf(stderr, "-m disable mosaic\n");
+	exit(0);
+}
+
+const char *get_filename_ext(const char *filename) {
+    const char *dot = strrchr(filename, '.');
+    if(!dot || dot == filename) return "";
+    return dot + 1;
+}
+
 int main(int argc, char **argv)
 {
-    int 	i;
-	Camera	*h;
-	Wifi	*w;
-	int retVal;
+    int			i, retVal;
+	Camera		*h;
+	Wifi		*w;
+	xmlDocPtr	doc;
+	xmlNodePtr	cur;
 	
-    if (argc < 2) {
-    	fprintf(stderr, "Usage: %s filename.xml\n", argv[0]);
-    	return 1;
-    }
-	xmlDocPtr    doc;
-	xmlNodePtr   cur;
+    recEna = mosEna = 1;
+    if(argc >= 2)
+    {
+		if(strcmp(argv[1],"help") == 0 || strcmp(argv[1],"-help") == 0 || strcmp(argv[1],"--help") == 0 || strcmp(argv[1],"-h") == 0)
+			print_usage(argv[0]);
 
-	doc = xmlParseFile(argv[1]);
+    	for(i = 1; i < argc; i++)
+    	{
+    		if(argv[i][0] == '-')
+    		{
+				if(strcmp(argv[i],"-r") == 0)
+					recEna = 0;
+				else if(strcmp(argv[i],"-m") == 0)
+					mosEna = 0;
+				else
+				{
+					printf("\n\t%sERROR!!! Unsupported option\n\n", TAG);
+					print_usage(argv[0]);
+				}
+			}
+			else
+			{
+				filename = argv[i];
+			}
+    	}
+    }
+    else
+    {
+    	print_usage(argv[0]);
+    }
+    	
+    if(filename == NULL)
+    {
+    	printf("\n\t%s ERROR!!! Please specify filename\n\n", TAG);
+    	print_usage(argv[0]);
+    }
+	else
+	{
+		if(strcmp(get_filename_ext(filename), "xml") != 0)
+		{
+	    	printf("\n\t%s ERROR!!! Please specify file with xml extension\n\n", TAG);
+	    	print_usage(argv[0]);
+		}
+	}
+	
+    printf("%s filename: %s recEna = %d mosEna = %d\n", TAG, filename, recEna, mosEna);
+
+	doc = xmlParseFile(filename);
+	if(doc == NULL)
+	{
+		printf("\t\n%s ERROR!!! Not a valid xml file\n\n", TAG);
+		exit(1);
+	}
 	cur = xmlDocGetRootElement(doc);
     fprintf(stdout, "Root is <%s> (%i)\n", cur->name, cur->type);
 	
@@ -133,8 +195,10 @@ int main(int argc, char **argv)
 		if(camera[i] != NULL)
 		{
 			h = camera[i];
-			startRec(h);
-			startMos(h);
+			if(recEna)
+				startRec(h);
+			if(mosEna)
+				startMos(h);
 			printf("\t%s Camera[%d]: %s\n", TAG, i, h->name);
 			printf("\t\turl: %s\n", h->url);
 			printf("\t\trecdir: %s\n", h->recdir);
@@ -167,14 +231,14 @@ int main(int argc, char **argv)
 			{
 				h = camera[i];
 //				printf("Camera[%d]: rec - %d mosaic - %d\n", i, h->recPid, h->mosPid);
-				if(h->recPid)
+				if(h->recPid && recEna)
 				{
 					retVal = kill(h->recPid, 0);
 //					printf("kill pid %d with 0 return %d\n", h->recPid, retVal);
 					if(retVal == -1)//restart recording
 						retVal = startRec(h);
 				}
-				if(h->mosPid)
+				if(h->mosPid && mosEna)
 				{
 					retVal = kill(h->mosPid, 0);
 //					printf("kill pid %d with 0 return %d\n", h->mosPid, retVal);
@@ -231,18 +295,22 @@ void sig_handler(int signum)
 
 int startRec(Camera *h)
 {
-	printf("\n\t%s Start recordig for camera %s\n", TAG, h->name);
-	h->recPid = fork();
-	if(h->recPid == -1)
+	if(h->rectime && h->recdir)
 	{
-		perror("fork"); /* произошла ошибка */
-		exit(1); /*выход из родительского процесса*/
+		printf("\n\t%s Start recordig for camera %s\n", TAG, h->name);
+
+		h->recPid = fork();
+		if(h->recPid == -1)
+		{
+			perror("fork"); /* произошла ошибка */
+			exit(1); /*выход из родительского процесса*/
+		}
+		if(h->recPid == 0)
+		{
+			execl("record", " ", h->rectime, h->recdir, h->url, NULL);
+		}
+//		sleep(1);
 	}
-	if(h->recPid == 0)
-	{
-		execl("record", " ", h->rectime, h->recdir, h->url, NULL);
-	}
-//	sleep(1);
 	return 0;
 }
 

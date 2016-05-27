@@ -3,6 +3,7 @@
 	Camera element: 
 		name		- Camera name for create directory fo record fies
 		url			- rtsp stream url 
+		recdir		- directory for save record files
 		rectime		- time in seconds to split video stream to separate files
 		latency		- gstreamer rtsp element parameter.
 		mosaic		- mosaic typ 2 for 2x2 3 for 3x3.
@@ -16,16 +17,16 @@
 		url="rtsp://admin:admin@192.168.1.200/0"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="500"
+		latency="3000"
 		mosaic="2"
 		position="1">
 	</Camera>
 	<Camera
 		name="Dome_White"
-		url="rtsp://192.168.1.10/user=admin_password=tlJwpbo6_channel=1_stream=0.sdp?real_stream"
+		url="rtsp://192.168.1.10/user=admin_password=tlJwpbo6_channel=1_stream=1.sdp?real_stream"
 		recdir="/media/sda1/MVR"
-		rectime="30"
-		latency="500"
+		rectime="60"
+		latency="3000"
 		mosaic="2"
 		position="2">
 	</Camera>
@@ -34,7 +35,7 @@
 		url="rtsp://admin:9999@192.168.11.94:8554/Stream1"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="500"
+		latency="3000"
 		mosaic="2"
 		position="3">
 	</Camera>
@@ -42,7 +43,7 @@
 		name="Ivideon_Stream_2"
 		url="rtsp://admin:9999@192.168.11.94:8555/Stream2"
 		recdir="/media/sda1/MVR"
-		rectime="10"
+		rectime="60"
 		latency="3000"
 		mosaic="2"
 		position="4">

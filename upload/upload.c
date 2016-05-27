@@ -31,16 +31,25 @@ void print_help(char *argv)
 
 void uploadToFTPServer(char *file)
 {
+	int ret;
 	char cmd[1024];
 	printf("%s %s\n",__func__, file);
 	
 	sprintf(cmd, "ftpput -u %s -p %s %s %s", ftpUser, ftpPasswd, ftpServer, file);
 	printf("%s\n",cmd);
-	system(cmd);
-	//remove file
-	sprintf(cmd, "rm -f %s", file);
-	printf("%s\n",cmd);
-	system(cmd);
+	ret = system(cmd);
+	//TODO check ftpput return remove file
+	if(ret != -1 && res != 127)
+	{
+		if(ret == EXIT_SUCCESS)
+		{
+			sprintf(cmd, "rm -f %s", file);
+			printf("%s\n",cmd);
+			system(cmd);
+		}
+		else if(ret == EXIT_FAILURE)
+			printf("ERROR!!! Can't upload %s to ftp %s\n", file, ftpServer);
+	}
 }
 
 void removeDir(char *path)
