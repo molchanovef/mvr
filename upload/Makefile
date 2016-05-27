@@ -27,7 +27,7 @@ install:
 ifdef CROSS
 	@echo "---------- Install ${EXECUTABLE} application on ${TARGET}"
 	-@$ sudo scp ${EXECUTABLE} ${TARGET}
-	-@$ sudo scp ${SCRIPTS} ${TARGET}
+#	-@$ sudo scp ${SCRIPTS} ${TARGET}
 endif
 
 clean:

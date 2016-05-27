@@ -39,7 +39,7 @@ void uploadToFTPServer(char *file)
 	printf("%s\n",cmd);
 	ret = system(cmd);
 	//TODO check ftpput return remove file
-	if(ret != -1 && res != 127)
+	if(ret != -1 && ret != 127)
 	{
 		if(ret == EXIT_SUCCESS)
 		{
