@@ -22,7 +22,7 @@
 GstBuffer *SPSPacket;
 GMainLoop *main_loop;  /* GLib's Main Loop */
 GstElement 	*pipeline, *rtspsrc, *vsink;
-GstElement	*pipeline_out, *vsrc, *filesink;
+GstElement	*pipeline_out, *vsrc, *filesink, *parse, *mux;
 #ifdef AUDIO
 GstElement  *asrc, *asink, *alsasrc, *mp3enc;
 gboolean push_to_asrc = FALSE;
@@ -75,13 +75,23 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data)
 				{
 					gst_element_set_state (pipeline_out, GST_STATE_NULL);
 					gst_object_unref (GST_OBJECT (vsrc));
+					gst_object_unref (GST_OBJECT (parse));
+					gst_object_unref (GST_OBJECT (mux));
 #ifdef AUDIO
 					gst_object_unref (GST_OBJECT (asrc));
 					gst_object_unref (GST_OBJECT (alsasrc));
 					gst_object_unref (GST_OBJECT (mp3enc));
+					g_free(asrc);
+					g_free(alsasrc);
+					g_free(mp3enc);
 #endif
 					gst_object_unref (GST_OBJECT (filesink));
 					gst_object_unref (GST_OBJECT (pipeline_out));
+//					g_free(vsrc);
+//					g_free(parse);
+//					g_free(mux);
+//					g_free(filesink);
+//					g_free(pipeline_out);
 					pipeline_out = NULL;
 					
 					if(cpRecToFile() != 0)
@@ -200,7 +210,7 @@ int run_pipeline_out()
 		descr = g_strdup_printf ("filesrc location=%s ! h264parse ! mp4mux ! filesink name=filesink", recfile);
 		pipeline_out = gst_parse_launch (descr, &error);
 		if (error != NULL) {
-			g_print ("%S could not construct out pipeline: %s\n", TAG, error->message);
+			g_print ("%s could not construct out pipeline: %s\n", TAG, error->message);
 			g_error_free (error);
 			return -2;
 		}
@@ -210,7 +220,7 @@ int run_pipeline_out()
 	else
 	{
 //		Video to mp4 file
-		descr = g_strdup_printf ("appsrc name=vsrc ! h264parse ! mp4mux ! filesink name=filesink");
+		descr = g_strdup_printf ("appsrc name=vsrc ! h264parse name=parse ! mp4mux name=mux ! filesink name=filesink");
 //		video to mp4 file mp3 audio to alsasink
 //		descr = g_strdup_printf (" mp4mux name=mux ! filesink name=filesink appsrc name=vsrc ! h264parse ! queue ! mux.video_0 appsrc name=asrc typefind=true ! beepdec ! audioconvert ! alsasink");
 //		video with pcm audio to mp4 file
@@ -227,6 +237,8 @@ int run_pipeline_out()
 			return -2;
 		}
 		vsrc = gst_bin_get_by_name(GST_BIN(pipeline_out), "vsrc");
+		parse = gst_bin_get_by_name(GST_BIN(pipeline_out), "parse");
+		mux = gst_bin_get_by_name(GST_BIN(pipeline_out), "mux");
 #ifdef AUDIO
 		asrc = gst_bin_get_by_name(GST_BIN(pipeline_out), "asrc");
 		alsasrc = gst_bin_get_by_name(GST_BIN(pipeline_out), "alsasrc");
@@ -294,7 +306,7 @@ static void new_video_buffer (GstElement *sink) {
 			g_signal_emit_by_name (vsrc, "push-buffer", buffer, &ret);
 			if(ret != GST_FLOW_OK)
 				g_print("%s ERROR!!! Can't push buffer to vsrc (%d)\n", TAG, ret);
-//			gst_buffer_unref (buffer);
+			gst_buffer_unref (buffer);
 		}
 	}
 }
@@ -353,8 +365,8 @@ static void new_audio_buffer (GstElement *sink) {
 
 int main(int argc, char* argv[])
 {
-	const gchar *nano_str;
-	guint major, minor, micro, nano;
+//	const gchar *nano_str;
+//	guint major, minor, micro, nano;
 	gchar *descr;
 	GError *error = NULL;
 
@@ -379,15 +391,15 @@ int main(int argc, char* argv[])
 	
 	/* Initialisation */
 	gst_init (&argc, &argv);
-	gst_version (&major, &minor, &micro, &nano);
+/*	gst_version (&major, &minor, &micro, &nano);
 	if (nano == 1)
 		nano_str = "(CVS)";
 	else if (nano == 2)
 		nano_str = "(Prerelease)";
 	else
 		nano_str = "";
-//	g_print ("This program is linked against GStreamer %d.%d.%d %s\n", major, minor, micro, nano_str);
-
+	g_print ("This program is linked against GStreamer %d.%d.%d %s\n", major, minor, micro, nano_str);
+*/
 	searcIPinURL(url, camFolder);
 	if(0 != createWorkFolder(workFolder))
 		return -1;

@@ -80,7 +80,7 @@ void free_cameras(void)
 
 void print_usage(char *arg)
 {
-	fprintf(stderr, "Usage: %s [OPTIONS] filename.xml\n", arg);
+	fprintf(stderr, "Usage: %s [OPTIONS] xml file\n", arg);
 	fprintf(stderr, "-r disable recording\n");
 	fprintf(stderr, "-m disable mosaic\n");
 	exit(0);

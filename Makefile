@@ -4,9 +4,9 @@ TOP=$(shell pwd)
 
 SCRIPTS=$(wildcard scripts/*.sh)
 
-.PHONY : all pre clean gst mosaic record upload mvr install
+.PHONY : all pre clean mosaic record upload mvr install scripts
 
-all: clean pre gst mosaic record upload mvr install
+all: clean pre mosaic record upload mvr install
 
 pre:
 	@mkdir -p ${TOP}/${BINARES}
@@ -42,5 +42,7 @@ install:
 	@${MAKE} -C record $@
 	@${MAKE} -C upload $@
 	@${MAKE} -C mvr $@
+
+scripts:
 	@$ sudo scp ${SCRIPTS} ${TARGET}
 
