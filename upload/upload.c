@@ -20,6 +20,7 @@ char baseDir[256];
 char ftpServer[256];
 char ftpUser[256];
 char ftpPasswd[256];
+char oldDir[256];
 
 void sig_handler(int signum);
 void* control_func (void *arg);
@@ -75,6 +76,10 @@ int searchOldestFile(char *path)
 	DIR *dp;
 	struct dirent *ep;
 	hour = min = sec = 0;
+	time_t ct = time(NULL);
+	struct tm *t = localtime(&ct);
+	int year, month, day;
+	int currDay, currDir;
 //	printf("%s\n",__func__);
 	
 	dp = opendir(path);
@@ -109,12 +114,25 @@ int searchOldestFile(char *path)
 		sprintf(str,"%s/%s",path, oldFile);
 		uploadToFTPServer(str);
 	}
-
-	if( access( recfile, F_OK ) == -1 )
+	else if( access( recfile, F_OK ) == -1 )
 	{
-		printf("%s !!! rec file missing !!!\n", __func__);
+		printf("\t\n%s !!! rec file missing !!!\n", __func__);
 		removeDir(path);
 	}
+	else//rec file present in case of record program error.
+		//check if directory not current day and remove it
+	{
+		currDay = (1900+t->tm_year) << 9 | (t->tm_mon+1) << 5 | t->tm_mday;
+		if (3 == sscanf(oldDir, "%d_%d_%d", &year, &month, &day))
+		{
+			currDir = year << 9 | month << 5 | day;
+			if(currDay > currDir)
+			{
+				printf("\t\n%s today %d oldDir %d\n", __func__, currDay, currDir);
+				removeDir(path);
+			}
+		}
+	 }
 	return 0;
 }
 
@@ -123,7 +141,6 @@ int searchOldestDir(char *path, char *dir)
 	int year, month, day;
 	int currDir;
 	int temp = 0x7FFFFFFF;
-	char oldDir[256];
 	DIR *dp;
 	struct dirent *ep;   
 	year = month = day = 0;
