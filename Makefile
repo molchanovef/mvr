@@ -6,7 +6,7 @@ SCRIPTS=$(wildcard scripts/*.sh)
 
 .PHONY : all pre clean mosaic record upload mvr install scripts
 
-all: clean pre mosaic record upload mvr install
+all: clean pre mosaic record upload mvr
 
 pre:
 	@mkdir -p ${TOP}/${BINARES}
