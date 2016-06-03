@@ -15,7 +15,7 @@
 
 pthread_t pth_control;
 int run;
-int recEna, mosEna;
+int recEna, mosEna, uplEna;
 char *filename;
 pid_t uploadPid;
 
@@ -96,6 +96,7 @@ void print_usage(char *arg)
 	fprintf(stderr, "Usage: %s [OPTIONS] xml file\n", arg);
 	fprintf(stderr, "-r disable recording\n");
 	fprintf(stderr, "-m disable mosaic\n");
+	fprintf(stderr, "-u disable upload\n");
 	exit(0);
 }
 
@@ -113,7 +114,7 @@ int main(int argc, char **argv)
 	xmlDocPtr	doc;
 	xmlNodePtr	cur;
 	
-    recEna = mosEna = 1;
+    recEna = mosEna = uplEna = 1;
     if(argc >= 2)
     {
 		if(strcmp(argv[1],"help") == 0 || strcmp(argv[1],"-help") == 0 || strcmp(argv[1],"--help") == 0 || strcmp(argv[1],"-h") == 0)
@@ -127,6 +128,8 @@ int main(int argc, char **argv)
 					recEna = 0;
 				else if(strcmp(argv[i],"-m") == 0)
 					mosEna = 0;
+				else if(strcmp(argv[i],"-u") == 0)
+					uplEna = 0;
 				else
 				{
 					printf("\n\t%sERROR!!! Unsupported option\n\n", TAG);
@@ -158,7 +161,7 @@ int main(int argc, char **argv)
 		}
 	}
 	
-    printf("%s filename: %s recEna = %d mosEna = %d\n", TAG, filename, recEna, mosEna);
+    printf("%s filename: %s recEna = %d mosEna = %d uplEna = %d\n", TAG, filename, recEna, mosEna, uplEna);
 
 	doc = xmlParseFile(filename);
 	if(doc == NULL)
@@ -220,7 +223,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	startUpload();
+	if(uplEna)
+		startUpload();
 	
 	for(i = 0; i < WIFI_NUM; i++)
 	{
@@ -263,7 +267,7 @@ int main(int argc, char **argv)
 			}
 		}
 		//Monitoring upload process
-		if(uploadPid)
+		if(uploadPid && uplEna)
 		{
 			retVal = kill(uploadPid, 0);
 //					printf("kill pid %d with 0 return %d\n", uploadPid, retVal);
