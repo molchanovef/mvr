@@ -13,8 +13,8 @@
 	-->
 <MVR>
 	<Camera
-		name="Acer_based"
-		url="rtsp://admin:9999@192.168.11.37:8555/Stream2"
+		name="Dome_Gray"
+		url="rtsp://admin:admin@192.168.1.200/0"
 		recdir="/media/sda1/MVR"
 		rectime="60"
 		latency="3000"
@@ -22,11 +22,11 @@
 		position="1">
 	</Camera>
 	<Camera
-		name="Dome_Gray"
-		url="rtsp://admin:admin@192.168.11.93/0"
+		name="Dome_White"
+		url="rtsp://192.168.1.10/user=admin_password=tlJwpbo6_channel=1_stream=1.sdp?real_stream"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="1000"
+		latency="3000"
 		mosaic="2"
 		position="2">
 	</Camera>
@@ -35,7 +35,7 @@
 		url="rtsp://admin:9999@192.168.11.94:8554/Stream1"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="500"
+		latency="3000"
 		mosaic="2"
 		position="3">
 	</Camera>

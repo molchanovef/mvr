@@ -40,11 +40,11 @@ endif
 install:
 	@echo "---------- Install ${EXECUTABLE} application on ${INSTALL_DIR}"
 	@$ cp ${EXECUTABLE} ${INSTALL_DIR}
-	@$ cp ${SCRIPTS} ${INSTALL_DIR}
+#	@$ cp ${SCRIPTS} ${INSTALL_DIR}
 ifdef CROSS
 	@echo "---------- Install ${EXECUTABLE} application on ${TARGET}"
 	-@$ sudo scp ${EXECUTABLE} ${TARGET}
-	-@$ sudo scp ${SCRIPTS} ${TARGET}
+#	-@$ sudo scp ${SCRIPTS} ${TARGET}
 endif
 
 clean:

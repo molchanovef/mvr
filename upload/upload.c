@@ -34,7 +34,7 @@ void uploadToFTPServer(char *file)
 {
 	int ret;
 	char cmd[1024];
-	printf("%s %s\n",__func__, file);
+//	printf("%s %s\n",__func__, file);
 	
 	sprintf(cmd, "ftpput -u %s -p %s %s %s", ftpUser, ftpPasswd, ftpServer, file);
 	printf("%s\n",cmd);
@@ -80,6 +80,7 @@ int searchOldestFile(char *path)
 	struct tm *t = localtime(&ct);
 	int year, month, day;
 	int currDay, currDir;
+	currDay = currDir = 0;
 //	printf("%s\n",__func__);
 	
 	dp = opendir(path);
@@ -108,32 +109,29 @@ int searchOldestFile(char *path)
 	
 	sprintf(recfile,"%s/rec",path);
 
+	currDay = (1900+t->tm_year) << 9 | (t->tm_mon+1) << 5 | t->tm_mday;
+	if (3 == sscanf(oldDir, "%d_%d_%d", &year, &month, &day))
+	{
+		currDir = year << 9 | month << 5 | day;
+	}
+
 	if(strlen(oldFile))
 	{
-		printf("oldest file %s\n",oldFile);
+//		printf("oldest file %s\n",oldFile);
 		sprintf(str,"%s/%s",path, oldFile);
 		uploadToFTPServer(str);
 	}
-	else if( access( recfile, F_OK ) == -1 )
+	else if( currDay != 0 && currDir != 0 && currDay > currDir ) //check if directory not current day and remove it
+	{
+		printf("\t\n%s !!! not today dir !!!\n", __func__);
+		removeDir(path);
+	}
+/*	else if( access( recfile, F_OK ) == -1 )
 	{
 		printf("\t\n%s !!! rec file missing !!!\n", __func__);
 		removeDir(path);
 	}
-	else//rec file present in case of record program error.
-		//check if directory not current day and remove it
-	{
-		currDay = (1900+t->tm_year) << 9 | (t->tm_mon+1) << 5 | t->tm_mday;
-		if (3 == sscanf(oldDir, "%d_%d_%d", &year, &month, &day))
-		{
-			currDir = year << 9 | month << 5 | day;
-			if(currDay > currDir)
-			{
-				printf("\t\n%s today %d oldDir %d\n", __func__, currDay, currDir);
-				removeDir(path);
-			}
-		}
-	 }
-	return 0;
+*/	return 0;
 }
 
 int searchOldestDir(char *path, char *dir)
@@ -253,17 +251,17 @@ int main (int argc, char *argv[])
 				break;
 			}
 		}
-		else if(ret == -ENOENT)
+/*		else if(ret == -ENOENT)
 		{
 			printf("All files uploaded! Exit.\n");
 			run = 0;
 			break;
 		}
-		else if(ret == -ENOTDIR)
+*/		else if(ret == -ENOTDIR)
 		{
 			printf("Directory %s missing. Exit.\n",baseDir);
 			run = 0;
-			break;
+//			break;
 		}
 		usleep(100000);
 	}

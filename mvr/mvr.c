@@ -17,6 +17,7 @@ pthread_t pth_control;
 int run;
 int recEna, mosEna;
 char *filename;
+pid_t uploadPid;
 
 typedef struct _Camera
 {
@@ -44,6 +45,18 @@ void* control_func (void *arg);
 void sig_handler(int signum);
 int startRec(Camera *h);
 int startMos(Camera *h);
+int startUpload(void);
+
+void stopUpload(void)
+{
+	int ret;
+	printf("\n\t%s Stop uploading\n", TAG);
+	if(uploadPid != 0)
+	{
+		ret = kill(uploadPid, SIGINT);
+		printf("\tKill uploadPid [%d] return %d\n",uploadPid, ret);
+	}
+}
 
 void free_cameras(void)
 {
@@ -207,6 +220,8 @@ int main(int argc, char **argv)
 		}
 	}
 
+	startUpload();
+	
 	for(i = 0; i < WIFI_NUM; i++)
 	{
 		if(wifi[i] != NULL)
@@ -247,9 +262,19 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		usleep(1000000);
+		//Monitoring upload process
+		if(uploadPid)
+		{
+			retVal = kill(uploadPid, 0);
+//					printf("kill pid %d with 0 return %d\n", uploadPid, retVal);
+			if(retVal == -1)//restart upload
+				retVal = startUpload();
+		}
+
+		usleep(10000);
 	}
 	free_cameras();
+	stopUpload();
 	xmlFreeDoc(doc);
 	return (0);
 }
@@ -307,7 +332,7 @@ int startRec(Camera *h)
 		}
 		if(h->recPid == 0)
 		{
-			execl("record", " ", h->rectime, h->recdir, h->url, NULL);
+			execl("record", " ", h->rectime, h->recdir, h->url, h->name, NULL);
 		}
 //		sleep(1);
 	}
@@ -333,3 +358,19 @@ int startMos(Camera *h)
 //	sleep(1);
 	return 0;
 }
+
+int startUpload(void)
+{
+	uploadPid = fork();
+	if(uploadPid == -1)
+	{
+		perror("fork"); /* произошла ошибка */
+		exit(1); /*выход из родительского процесса*/
+	}
+	if(uploadPid == 0)
+	{
+		execl("upload", " ", NULL);
+	}
+	return 0;
+}
+

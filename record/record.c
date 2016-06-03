@@ -55,7 +55,7 @@ void print_buffer(GstBuffer *buf);
 
 void print_help(char *argv)
 {
-	g_print("Usage %s <duration> <base dir> <rtsp url>\n",argv);
+	g_print("Usage %s <duration> <base dir> <rtsp url> [name]\n",argv);
 }
 
 static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data)
@@ -383,6 +383,10 @@ int main(int argc, char* argv[])
 		strcpy(url, URL);
 	else
 		strcpy(url, argv[3]);
+	if(argc < 5)
+		searcIPinURL(url, camFolder);
+	else
+		strcpy(camFolder, argv[4]);
 		
 	signal(SIGINT, sig_handler);
 
@@ -400,7 +404,6 @@ int main(int argc, char* argv[])
 		nano_str = "";
 	g_print ("This program is linked against GStreamer %d.%d.%d %s\n", major, minor, micro, nano_str);
 */
-	searcIPinURL(url, camFolder);
 	if(0 != createWorkFolder(workFolder))
 		return -1;
 
