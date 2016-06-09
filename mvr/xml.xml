@@ -3,6 +3,7 @@
 	Camera element: 
 		name		- Camera name for create directory fo record fies
 		url			- rtsp stream url 
+		decoder		- h264 or mpeg4
 		recdir		- directory for save record files
 		rectime		- time in seconds to split video stream to separate files
 		latency		- gstreamer rtsp element parameter.
@@ -12,41 +13,65 @@
 		ssid, password.
 	-->
 <MVR>
-	<Camera
+<!--	<Camera
 		name="Acer_based"
 		url="rtsp://admin:9999@192.168.11.37:8555/Stream2"
+		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
 		latency="3000"
 		mosaic="2"
 		position="1">
-	</Camera>
+	</Camera> -->
 	<Camera
 		name="Dome_Gray"
 		url="rtsp://admin:admin@192.168.11.93/0"
+		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
 		latency="1000"
 		mosaic="2"
-		position="2">
+		position="3">
 	</Camera>
-	<Camera
+<!--	<Camera
 		name="Ivideon_Stream_1"
 		url="rtsp://admin:9999@192.168.11.94:8554/Stream1"
+		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
 		latency="500"
 		mosaic="2"
 		position="3">
-	</Camera>
+	</Camera> -->
 	<Camera
 		name="Ivideon_Stream_2"
 		url="rtsp://admin:9999@192.168.11.94:8555/Stream2"
+		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
 		latency="3000"
 		mosaic="2"
 		position="4">
+	</Camera>
+	<Camera
+		name="LLAMP_251"
+		url="rtsp://admin:9999@192.168.11.251:554/mpeg4"
+		decoder = "mpeg4"
+		recdir="/media/sda1/MVR"
+		rectime="60"
+		latency="300"
+		mosaic="2"
+		position="1">
+	</Camera>
+	<Camera
+		name="LLAMP_253"
+		url="rtsp://admin:9999@192.168.11.253:554/mpeg4"
+		decoder = "mpeg4"
+		recdir="/media/sda1/MVR"
+		rectime="60"
+		latency="300"
+		mosaic="2"
+		position="2">
 	</Camera>
 <!--	<Camera
 		name="Camera_168"

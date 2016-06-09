@@ -10,6 +10,7 @@
 #include <glib.h>
 
 #define URL				"rtsp://admin:admin@192.168.1.200/0"
+#define DECODER			"h264"
 #ifdef CROSS
 #define BASE_DIR 		"/media/sda1/MVR"
 //#define BASE_DIR 		"/media/Videos/MVR"
@@ -34,6 +35,7 @@ gboolean signal_received = FALSE;
 
 struct timespec tstart, tcurr;
 char url[1024];
+char decoder[16];
 char baseDir[64];
 int duration;
 char camFolder[256];
@@ -45,6 +47,7 @@ int run_pipeline_out(void);
 
 int cpRecToFile(void);
 gboolean isSPSpacket(guint8 * paket);
+gboolean isMPEG4iFrame(guint8 * paket);
 gboolean isTimeout();
 void sig_handler(int signum);
 void searcIPinURL(char *url, char *camFolder);
@@ -55,7 +58,7 @@ void print_buffer(GstBuffer *buf);
 
 void print_help(char *argv)
 {
-	g_print("Usage %s <duration> <base dir> <rtsp url> [name]\n",argv);
+	g_print("Usage %s <duration> <base dir> <rtsp url> <decoder> [name]\n",argv);
 }
 
 static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data)
@@ -220,7 +223,10 @@ int run_pipeline_out()
 	else
 	{
 //		Video to mp4 file
-		descr = g_strdup_printf ("appsrc name=vsrc ! h264parse name=parse ! mp4mux name=mux ! filesink name=filesink");
+		if(strcmp(decoder, "h264") == 0)
+			descr = g_strdup_printf ("appsrc name=vsrc ! h264parse name=parse ! mp4mux name=mux ! filesink name=filesink");
+		else if(strcmp(decoder, "mpeg4") == 0)
+			descr = g_strdup_printf ("appsrc name=vsrc ! mpeg4videoparse name=parse ! mp4mux name=mux ! filesink name=filesink");
 //		video to mp4 file mp3 audio to alsasink
 //		descr = g_strdup_printf (" mp4mux name=mux ! filesink name=filesink appsrc name=vsrc ! h264parse ! queue ! mux.video_0 appsrc name=asrc typefind=true ! beepdec ! audioconvert ! alsasink");
 //		video with pcm audio to mp4 file
@@ -287,7 +293,9 @@ static void new_video_buffer (GstElement *sink) {
 		}
 		if (buffer)
 		{
-			if(isSPSpacket(buffer->data))
+			if( ((strcmp(decoder, "h264") == 0) && isSPSpacket(buffer->data)) || 
+				((strcmp(decoder, "mpeg4") == 0) && isMPEG4iFrame(buffer->data)) )
+			
 			{
 				tvhIPCAMworkaround(buffer);
 				//Save SPS packet for next pipeline and stop pushing data to current pipeline
@@ -384,9 +392,13 @@ int main(int argc, char* argv[])
 	else
 		strcpy(url, argv[3]);
 	if(argc < 5)
+		strcpy(decoder, DECODER);
+	else
+		strcpy(decoder, argv[4]);
+	if(argc < 6)
 		searcIPinURL(url, camFolder);
 	else
-		strcpy(camFolder, argv[4]);
+		strcpy(camFolder, argv[5]);
 		
 	signal(SIGINT, sig_handler);
 
@@ -409,7 +421,10 @@ int main(int argc, char* argv[])
 
 	main_loop = g_main_loop_new (NULL, FALSE);
 //	Video	
+	if(strcmp(decoder, "h264") == 0)
 		descr = g_strdup_printf ("rtspsrc name=rtspsrc location=%s ! gstrtpjitterbuffer ! rtph264depay ! appsink name=vsink", url);
+	else if(strcmp(decoder, "mpeg4") == 0)
+		descr = g_strdup_printf ("rtspsrc name=rtspsrc location=%s ! gstrtpjitterbuffer ! rtpmp4vdepay ! appsink name=vsink", url);
 //	with mp3 audio
 //	descr = g_strdup_printf ("rtspsrc name=rtspsrc location=%s name=src ! gstrtpjitterbuffer ! rtph264depay ! appsink name=vsink src. ! rtpmpadepay ! appsink name=asink", url);
 //	with aac audio
@@ -482,6 +497,15 @@ gboolean isSPSpacket(guint8 * paket)
 	{
 		return TRUE;
 	}
+	return FALSE;
+}
+
+gboolean isMPEG4iFrame(guint8 *packet)
+{
+	if( packet[0]==0x00 && packet[1]==0x00 && packet[2]==0x01 && packet[3]==0xB6 && !(packet[4]&0xC0) )
+//	if( packet[0]==0x00 && packet[1]==0x00 && packet[2]==0x01 && (packet[3]==0xB0 || (packet[3]==0xB6 && !(packet[4]&0xC0))) )
+		return TRUE;
+
 	return FALSE;
 }
 

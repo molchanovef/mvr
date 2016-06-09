@@ -1,0 +1,21 @@
+Boolean NvrFramedRTPSource::isH264iFrame(unsigned char*& pktBegin)
+{
+	unsigned char fragment_type = pktBegin[0]&0x1F;
+	unsigned char nal_type = pktBegin[1]&0x1F;
+	unsigned char start_bit = pktBegin[1]&0x80;
+
+	if( ((fragment_type == 28 || fragment_type == 29) && nal_type == 5 && start_bit == 128) || fragment_type == 5 )
+		return True;
+
+	return False;
+}
+
+Boolean NvrFramedRTPSource::isMPEG4iFrame(unsigned char*& pktBegin)
+{
+//	if( pktBegin[0]==0x00 && pktBegin[1]==0x00 && pktBegin[2]==0x01 && pktBegin[3]==0xB6 && !(pktBegin[4]&0xC0) )
+	if( pktBegin[0]==0x00 && pktBegin[1]==0x00 && pktBegin[2]==0x01 && (pktBegin[3]==0xB0 || (pktBegin[3]==0xB6 && !(pktBegin[4]&0xC0))) )
+		return True;
+
+	return False;
+}
+

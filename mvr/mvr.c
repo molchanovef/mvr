@@ -23,6 +23,7 @@ typedef struct _Camera
 {
 	char *name;
 	char *url;
+	char *decoder;
 	char *recdir;
 	char *rectime;
 	char *latency;
@@ -81,6 +82,7 @@ void free_cameras(void)
 			}
 			free(h->name);
 			free(h->url);
+			free(h->decoder);
 			free(h->recdir);
 			free(h->rectime);
 			free(h->latency);
@@ -183,6 +185,7 @@ int main(int argc, char **argv)
 			h = malloc(sizeof(Camera));
 			h->name			= (char*)xmlGetProp(cur, (const xmlChar*)"name");
 			h->url			= (char*)xmlGetProp(cur, (const xmlChar*)"url");
+			h->decoder		= (char*)xmlGetProp(cur, (const xmlChar*)"decoder");
 			h->recdir		= (char*)xmlGetProp(cur, (const xmlChar*)"recdir");
 			h->rectime		= (char*)xmlGetProp(cur, (const xmlChar*)"rectime");
 			h->latency		= (char*)xmlGetProp(cur, (const xmlChar*)"latency");
@@ -216,7 +219,7 @@ int main(int argc, char **argv)
 			if(mosEna)
 				startMos(h);
 			printf("\t%s Camera[%d]: %s\n", TAG, i, h->name);
-			printf("\t\turl: %s\n", h->url);
+			printf("\t\turl: %s decoder: %s\n", h->url, h->decoder);
 			printf("\t\trecdir: %s\n", h->recdir);
 			printf("\t\trectime: %s latency: %s mosaic %s position: %s\n", h->rectime, h->latency, h->mosaic, h->position);
 			printf("\t\trecPid: %d mosPid: %d\n", h->recPid, h->mosPid);
@@ -275,7 +278,7 @@ int main(int argc, char **argv)
 				retVal = startUpload();
 		}
 
-		usleep(10000);
+		usleep(500000);
 	}
 	free_cameras();
 	stopUpload();
@@ -336,7 +339,7 @@ int startRec(Camera *h)
 		}
 		if(h->recPid == 0)
 		{
-			execl("record", " ", h->rectime, h->recdir, h->url, h->name, NULL);
+			execl("record", " ", h->rectime, h->recdir, h->url, h->decoder, h->name, NULL);
 		}
 //		sleep(1);
 	}
@@ -356,7 +359,7 @@ int startMos(Camera *h)
 		}
 		if(h->mosPid == 0)
 		{
-			execl("mosaic", " ", h->url, h->mosaic, h->position, h->latency, NULL);
+			execl("mosaic", " ", h->url, h->decoder, h->mosaic, h->position, h->latency, h->name, NULL);
 		}
 	}
 //	sleep(1);
@@ -365,6 +368,7 @@ int startMos(Camera *h)
 
 int startUpload(void)
 {
+	printf("\n\t%s Start upload\n", TAG);
 	uploadPid = fork();
 	if(uploadPid == -1)
 	{

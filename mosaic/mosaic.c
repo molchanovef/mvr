@@ -10,6 +10,7 @@
 #define BORDER	5//minimum 2 cause 1 pixel used for black border
 //#define URL "rtsp://admin:9999@192.168.11.94:8555/Stream2"
 #define URL	"rtsp://admin:admin@192.168.1.200/0"
+#define DECODER	"h264"
 #define TAG		"MOSAIC:"
 
 typedef struct _Mosaic
@@ -26,10 +27,10 @@ void sig_handler(int signum);
 
 void print_help(char *argv)
 {
-	printf("Usage %s <rtsp url> <type(2,3) 2x2 or 3x3> <position 1-4 or 1-9> <latency ms>\n",argv);
+	printf("Usage %s <rtsp url> <decoder_type> <type(2,3) 2x2 or 3x3> <position 1-4 or 1-9> <latency ms>\n",argv);
 }
 
-static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer *ptr)
+static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer ptr)
 {
 	Mosaic *h = (Mosaic*)ptr;
 	switch (GST_MESSAGE_TYPE (msg))
@@ -60,9 +61,10 @@ int main(int argc, char* argv[])
 	int pos, type, latency;
 	char name[1024] = {0};
 	char url[1024] = {0};
+	char decoder[16] = {0};
 	int left, top, width, height;
-	const gchar *nano_str;
-	guint major, minor, micro, nano;
+/*	const gchar *nano_str;
+	guint major, minor, micro, nano;*/
 	gchar *descr;
 	GError *error = NULL;
 	Mosaic *h;
@@ -81,21 +83,25 @@ int main(int argc, char* argv[])
 	else
 		strcpy(url,argv[1]);
 	if(argc < 3)
+		strcpy(decoder, DECODER);
+	else
+		strcpy(decoder, argv[2]);
+	if(argc < 4)
 		type = 2;
 	else
-		type = atoi(argv[2]);
-	if(argc < 4)
+		type = atoi(argv[3]);
+	if(argc < 5)
 		pos = 1;
 	else
-		pos = atoi(argv[3]);
-	if(argc < 5)
+		pos = atoi(argv[4]);
+	if(argc < 6)
 		latency = 3000;
 	else
-		latency = atoi(argv[4]);
-	if(argc == 6)
-		strcpy(name, argv[5]);
+		latency = atoi(argv[5]);
+	if(argc == 7)
+		strcpy(name, argv[6]);
 		
-	printf("%s name %s url %s type %d position %d latency %d\n", TAG, name, url, type, pos, latency);
+	printf("%s name %s url %s decoder %s type %d position %d latency %d\n", TAG, name, url, decoder, type, pos, latency);
 	width = DW/type; height = DH/type;
 	if( type == 2 )
 	{
@@ -128,7 +134,7 @@ int main(int argc, char* argv[])
 
 	/* Initialisation */
 	gst_init (&argc, &argv);
-	gst_version (&major, &minor, &micro, &nano);
+/*	gst_version (&major, &minor, &micro, &nano);
 
 	if (nano == 1)
 		nano_str = "(CVS)";
@@ -137,12 +143,15 @@ int main(int argc, char* argv[])
 	else
 		nano_str = "";
 
-//	printf ("%s This program is linked against GStreamer %d.%d.%d %s\n", TAG, major, minor, micro, nano_str);
-
+	printf ("%s This program is linked against GStreamer %d.%d.%d %s\n", TAG, major, minor, micro, nano_str);
+*/
 	h->main_loop = g_main_loop_new (NULL, FALSE);
 
 #ifdef CROSS
- 	descr = g_strdup_printf ("rtspsrc location=%s latency=%d ! gstrtpjitterbuffer ! rtph264depay ! vpudec output-format=1 ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", url, latency, left, top, width, height);
+	if(strcmp(decoder, "h264") == 0)
+	 	descr = g_strdup_printf ("rtspsrc location=%s latency=%d ! gstrtpjitterbuffer ! rtph264depay ! vpudec output-format=1 ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", url, latency, left, top, width, height);
+	else if(strcmp(decoder, "mpeg4") == 0)
+	 	descr = g_strdup_printf ("rtspsrc location=%s latency=%d ! gstrtpjitterbuffer ! rtpmp4vdepay ! vpudec output-format=1 ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", url, latency, left, top, width, height);
 #else
  	descr = g_strdup_printf ("rtspsrc location=%s latency=%d ! rtph264depay ! h264parse ! ffdec_h264 ! ffmpegcolorspace ! autovideosink", url, latency);
 #endif
@@ -152,7 +161,7 @@ int main(int argc, char* argv[])
 	{
 		/* we add a message handler */
 		h->bus = gst_pipeline_get_bus (GST_PIPELINE (h->pipeline));
-		h->bus_watch_id = gst_bus_add_watch (h->bus, bus_call, h);
+		h->bus_watch_id = gst_bus_add_watch (h->bus, bus_call, (gpointer)h);
 		gst_object_unref (h->bus);
 
 		/* Set the pipeline to "playing" state*/
