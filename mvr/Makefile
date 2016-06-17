@@ -4,7 +4,7 @@
 SOURCES=$(wildcard *.c)
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=mvr
-SCRIPTS=xml.xml
+SCRIPTS=xml2.xml xml3.xml
 
 ifdef CROSS
 SYSROOTFS=/home/mef/iMX6/fsl-release-bsp/build-dfb/tmp/sysroots/imx6qsabresd
