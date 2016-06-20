@@ -3,6 +3,7 @@
 #include <libxml/parser.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -12,12 +13,16 @@
 #define CAM_NUM		32
 #define WIFI_NUM	32
 #define TAG			"MVR:"
+#define MIN(a,b)	((a)<(b)?(a):(b))
 
 pthread_t pth_control;
 int run;
 int recEna, mosEna, uplEna;
 char *filename;
 pid_t uploadPid;
+
+enum layer {SINGLE=1, QUAD, NINE};
+enum layer mostype = NINE;
 
 typedef struct _Camera
 {
@@ -47,6 +52,8 @@ void sig_handler(int signum);
 int startRec(Camera *h);
 int startMos(Camera *h);
 int startUpload(void);
+void change_mosaic(void);
+void shift_mosaic(void);
 
 void stopUpload(void)
 {
@@ -77,7 +84,7 @@ void free_cameras(void)
 			}
 			if(h->mosPid != 0)
 			{
-				kill(h->mosPid, SIGINT);
+				ret = kill(h->mosPid, SIGINT);
 				printf("\tKill mosPid [%d] return %d\n",h->mosPid, ret);
 			}
 			free(h->name);
@@ -307,6 +314,18 @@ void* control_func (void *arg)
 			case 'x':
 				run = 0;
 				break;
+			case 'l':
+				if(mosEna)
+					change_mosaic();
+				else
+					printf("\t\nMOSAIC DISABLED!!!\n");
+				break;
+			case 's':
+				if(mosEna)
+					shift_mosaic();
+				else
+					printf("\t\nMOSAIC DISABLED!!!\n");
+				break;
 		}
 		usleep(100000);
 	}
@@ -348,9 +367,9 @@ int startRec(Camera *h)
 
 int startMos(Camera *h)
 {
-	if(h->mosaic && h->position)
+	if( strlen(h->mosaic) && (atoi(h->position) != 0) )
 	{
-		printf("\n\t%s Start mosaic for camera %s\n", TAG, h->name);
+		printf("\n\t%s Start mosaic %s pos %s for camera %s \n", TAG, h->mosaic, h->position, h->name);
 		h->mosPid = fork();
 		if(h->mosPid == -1)
 		{
@@ -380,5 +399,100 @@ int startUpload(void)
 		execl("upload", " ", NULL);
 	}
 	return 0;
+}
+
+static void stop_mosaic(bool clearPos)
+{
+	int i;
+	int ret;
+	Camera *h;
+	for(i = 0; i < CAM_NUM; i++)
+	{
+		if(camera[i] != NULL)
+		{
+			h = camera[i];
+			sprintf(h->mosaic, "%d", mostype);
+			if(clearPos)
+				sprintf(h->position, "%d", 0);
+			printf("\t\n%s %s mosaic %s position %s\n", TAG, h->name, h->mosaic, h->position);
+			if(h->mosPid != 0)
+			{
+				ret = kill(h->mosPid, SIGINT);
+				printf("\tKill mosPid [%d] return %d\n",h->mosPid, ret);
+				h->mosPid = 0;
+			}
+		}
+	}
+}
+
+void change_mosaic(void)
+{
+	int i;
+	Camera *h;
+	mostype++;
+	if (mostype > NINE)
+		mostype = SINGLE;
+	stop_mosaic(true);
+	for(i = 0; i < MIN(mostype*mostype, CAM_NUM); i++)
+	{
+		if(camera[i] != NULL)
+		{
+			h = camera[i];
+			sprintf(h->position, "%d", i + 1);
+			printf("\t\n%s %s %s\n", TAG, __func__, h->name);
+			startMos(h);
+		}
+	}
+}
+
+void shift_mosaic(void)//TODO with parameter
+{
+	int i;
+	printf("%s %s\n", TAG, __func__);
+	Camera *h;
+	int first = 0;
+	int camcnt = 0;
+	int wndcnt = mostype*mostype;
+	int cnt = 0;
+
+	stop_mosaic(false);
+	
+	for(i = 0; i < CAM_NUM; i++)
+	{
+		if(camera[i] != NULL)
+		{
+			h = camera[i];
+			printf("\t\n%s before: cam %s pos %s\n", TAG, h->name, h->position);
+			camcnt++;
+			if(atoi(h->position) == 1)
+			{
+				first = i;
+				printf("%s %s found first at %d\n", TAG, __func__, first);
+			}
+		}
+	}
+
+	sprintf(camera[first]->position, "%d", 0);
+	
+	for(i = first+1; i < camcnt; i++)
+	{
+		h = camera[i];
+		sprintf(h->position, "%d", ++cnt);
+		printf("\t\n%s after: cam %s pos %s\n", TAG, h->name, h->position);
+		startMos(h);
+		if(cnt == wndcnt) break;
+	}
+	printf("%s %s cnt %d wndcnt %d\n", TAG, __func__, cnt, wndcnt);
+	if(cnt < MIN(wndcnt, camcnt))
+	{
+		for(i = 0; i < camcnt; i++)
+		{
+			h = camera[i];
+			sprintf(h->position, "%d", ++cnt);
+			printf("\t\n%s after1: cam %s pos %s\n", TAG, h->name, h->position);
+			startMos(h);
+			if(cnt == wndcnt || cnt == camcnt) break;
+		}
+	}
 }
 

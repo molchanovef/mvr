@@ -23,7 +23,7 @@
 		rectime="60"
 		latency="3000"
 		mosaic="3"
-		position="2">
+		position="1">
 	</Camera>
 	<Camera
 		name="Dome_Gray"
@@ -33,7 +33,7 @@
 		rectime="60"
 		latency="3000"
 		mosaic="3"
-		position="3">
+		position="2">
 	</Camera>
 	<Camera
 		name="Ivideon_Stream_1"

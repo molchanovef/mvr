@@ -103,7 +103,11 @@ int main(int argc, char* argv[])
 		
 	printf("%s name %s url %s decoder %s type %d position %d latency %d\n", TAG, name, url, decoder, type, pos, latency);
 	width = DW/type; height = DH/type;
-	if( type == 2 )
+	if( type == 1 )
+	{
+		left = 0; top = 0;
+	}
+	else if( type == 2 )
 	{
 		switch(pos)
 		{
