@@ -258,7 +258,7 @@ int run_pipeline_out()
 	gst_object_unref (bus);
 
 	ret = gst_element_set_state (pipeline_out, GST_STATE_PLAYING);
-	g_print("%s Out pipeline %s (%d)\n", TAG, filename, ret);
+	g_print("%s %s\n", TAG, filename);
 
 	if(!alarm)
 	{
@@ -378,7 +378,8 @@ int main(int argc, char* argv[])
 	gchar *descr;
 	GError *error = NULL;
 
-//	print_help(argv[0]);
+	if(argc < 1)
+		print_help(argv[0]);
 	if(argc < 2)
 		duration = DURATION;
 	else
@@ -458,7 +459,7 @@ int main(int argc, char* argv[])
 		goto finish;
 	}
 	/* Set the pipeline to "playing" state*/
-	g_print ("%s Now playing: %s duration %d baseDir %s\n", TAG, url, duration, baseDir);
+//	g_print ("%s Now playing: %s duration %d baseDir %s\n", TAG, url, duration, baseDir);
 	gst_element_set_state (pipeline, GST_STATE_PLAYING);
 
 	/* Iterate */
@@ -467,10 +468,10 @@ int main(int argc, char* argv[])
 	
 finish:
 	/* Out of the main loop, clean up nicely */
-	g_print ("%s Returned, stopping playback\n", TAG);
+//	g_print ("%s Returned, stopping playback\n", TAG);
 	gst_element_set_state (pipeline, GST_STATE_NULL);
 
-	g_print ("%s Deleting pipeline\n", TAG);
+//	g_print ("%s Deleting pipeline\n", TAG);
 	gst_object_unref (GST_OBJECT (pipeline));
 	gst_object_unref (GST_OBJECT (rtspsrc));
 	gst_object_unref (GST_OBJECT (vsink));
@@ -534,7 +535,7 @@ Send EOS to vsrc pipeline
 void sig_handler(int signum)
 {
 	GstEvent* event;
-    g_print("%s Received signal %d\n", TAG, signum);
+//    g_print("%s Received signal %d\n", TAG, signum);
     //Stop push data to vsrc
 	push_to_vsrc = FALSE;
 	//Don't create new pipeline

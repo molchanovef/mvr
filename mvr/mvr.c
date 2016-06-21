@@ -18,11 +18,13 @@
 pthread_t pth_control;
 int run;
 int recEna, mosEna, uplEna;
+int camcnt;
 char *filename;
 pid_t uploadPid;
 
-enum layer {SINGLE=1, QUAD, NINE};
-enum layer mostype = NINE;
+const char *LAYER[] = {"SINGLE", "2x2", "3x3"};
+typedef enum layer_s {SINGLE=1, QUAD, NINE} layer_t;
+layer_t mosaic = NINE;
 
 typedef struct _Camera
 {
@@ -63,6 +65,7 @@ void stopUpload(void)
 	{
 		ret = kill(uploadPid, SIGINT);
 		printf("\tKill uploadPid [%d] return %d\n",uploadPid, ret);
+		uploadPid = 0;
 	}
 }
 
@@ -81,11 +84,13 @@ void free_cameras(void)
 			{
 				ret = kill(h->recPid, SIGINT);
 				printf("\tKill recPid [%d] return %d\n",h->recPid, ret);
+				h->recPid = 0;
 			}
 			if(h->mosPid != 0)
 			{
 				ret = kill(h->mosPid, SIGINT);
 				printf("\tKill mosPid [%d] return %d\n",h->mosPid, ret);
+				h->mosPid = 0;
 			}
 			free(h->name);
 			free(h->url);
@@ -102,10 +107,15 @@ void free_cameras(void)
 
 void print_usage(char *arg)
 {
-	fprintf(stderr, "Usage: %s [OPTIONS] xml file\n", arg);
-	fprintf(stderr, "-r disable recording\n");
-	fprintf(stderr, "-m disable mosaic\n");
-	fprintf(stderr, "-u disable upload\n");
+	printf("Usage: %s [OPTIONS] xml file\n", arg);
+	printf("-r disable recording\n");
+	printf("-m disable mosaic\n");
+	printf("-u disable upload\n");
+	printf("\n######### Runtime options #########\n");
+	printf("h - this help\n");
+	printf("x - Exit\n");
+	printf("l - switch layout (single, quad, nine)\n");
+	printf("s - shift camera in layout\n");
 	exit(0);
 }
 
@@ -182,6 +192,7 @@ int main(int argc, char **argv)
     fprintf(stdout, "Root is <%s> (%i)\n", cur->name, cur->type);
 	
 	cur = cur->xmlChildrenNode;
+	camcnt = 0;
 	while (cur != NULL)
 	{
 //    	fprintf(stdout, "Child is <%s> (%i)\n", cur->name, cur->type);
@@ -201,6 +212,7 @@ int main(int argc, char **argv)
 			h->recPid		= 0;
 			h->mosPid		= 0;
 			camera[i] 		= h;
+			camcnt++;
 		}
 		if ((!xmlStrcmp(cur->name, (const xmlChar *)"WiFi")))
 		{
@@ -295,9 +307,10 @@ int main(int argc, char **argv)
 
 void print_help(char *argv)
 {
-	printf("Usage %s <setup.xml>\n",argv);
 	printf("h - this help\n");
 	printf("x - Exit\n");
+	printf("l - switch layout (single, quad, nine)\n");
+	printf("s - shift camera in layout\n");
 }
 
 void* control_func (void *arg)
@@ -411,15 +424,17 @@ static void stop_mosaic(bool clearPos)
 		if(camera[i] != NULL)
 		{
 			h = camera[i];
-			sprintf(h->mosaic, "%d", mostype);
+			//Set new mosaic type for all cameras in list
+			sprintf(h->mosaic, "%d", mosaic);
+			//Clear positions for all cameras only when change mosaic type
 			if(clearPos)
 				sprintf(h->position, "%d", 0);
-			printf("\t\n%s %s mosaic %s position %s\n", TAG, h->name, h->mosaic, h->position);
+				
 			if(h->mosPid != 0)
 			{
 				ret = kill(h->mosPid, SIGINT);
 				printf("\tKill mosPid [%d] return %d\n",h->mosPid, ret);
-				h->mosPid = 0;
+				h->mosPid = 0;//For stop monitoring mosaic for this camera
 			}
 		}
 	}
@@ -429,17 +444,17 @@ void change_mosaic(void)
 {
 	int i;
 	Camera *h;
-	mostype++;
-	if (mostype > NINE)
-		mostype = SINGLE;
+	mosaic++;
+	if (mosaic > NINE) mosaic = SINGLE;
+	printf("%s Change mosaic to %s\n", TAG, LAYER[mosaic-1]);
 	stop_mosaic(true);
-	for(i = 0; i < MIN(mostype*mostype, CAM_NUM); i++)
+	//Assign positions for cameras
+	for(i = 0; i < MIN(mosaic*mosaic, camcnt); i++)
 	{
 		if(camera[i] != NULL)
 		{
 			h = camera[i];
 			sprintf(h->position, "%d", i + 1);
-			printf("\t\n%s %s %s\n", TAG, __func__, h->name);
 			startMos(h);
 		}
 	}
@@ -447,51 +462,46 @@ void change_mosaic(void)
 
 void shift_mosaic(void)//TODO with parameter
 {
-	int i;
+	int i, cnt;
 	printf("%s %s\n", TAG, __func__);
 	Camera *h;
-	int first = 0;
-	int camcnt = 0;
-	int wndcnt = mostype*mostype;
-	int cnt = 0;
+	int wndcnt = mosaic*mosaic;
 
 	stop_mosaic(false);
-	
+
+	//Search for camera with position 1	
 	for(i = 0; i < CAM_NUM; i++)
 	{
 		if(camera[i] != NULL)
 		{
 			h = camera[i];
-			printf("\t\n%s before: cam %s pos %s\n", TAG, h->name, h->position);
-			camcnt++;
 			if(atoi(h->position) == 1)
 			{
-				first = i;
-				printf("%s %s found first at %d\n", TAG, __func__, first);
+				sprintf(camera[i]->position, "%d", 0);//Clear camera position 1 
+				break;
 			}
 		}
 	}
-
-	sprintf(camera[first]->position, "%d", 0);
-	
-	for(i = first+1; i < camcnt; i++)
+	cnt = 0;
+	//Assign position in mosaic for cameras
+	//Start from next camera in list
+	for(i = i + 1; i < camcnt; i++)
 	{
 		h = camera[i];
 		sprintf(h->position, "%d", ++cnt);
-		printf("\t\n%s after: cam %s pos %s\n", TAG, h->name, h->position);
 		startMos(h);
 		if(cnt == wndcnt) break;
 	}
-	printf("%s %s cnt %d wndcnt %d\n", TAG, __func__, cnt, wndcnt);
-	if(cnt < MIN(wndcnt, camcnt))
+	//Workaround in case of reaching the end of the list 
+	//when not busy with all the mosaic window
+	if(cnt < MIN(wndcnt, camcnt))//in case of camcnt < wndcnt
 	{
 		for(i = 0; i < camcnt; i++)
 		{
 			h = camera[i];
 			sprintf(h->position, "%d", ++cnt);
-			printf("\t\n%s after1: cam %s pos %s\n", TAG, h->name, h->position);
 			startMos(h);
-			if(cnt == wndcnt || cnt == camcnt) break;
+			if(cnt == wndcnt || cnt == camcnt) break;//in case of camcnt < wndcnt
 		}
 	}
 }

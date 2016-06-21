@@ -77,7 +77,8 @@ int main(int argc, char* argv[])
 	}
 	mosaic = h;
 	
-	print_help(argv[0]);
+	if(argc < 1)
+		print_help(argv[0]);
 	if(argc < 2)
 		strcpy(url, URL);
 	else
@@ -101,7 +102,7 @@ int main(int argc, char* argv[])
 	if(argc == 7)
 		strcpy(name, argv[6]);
 		
-	printf("%s name %s url %s decoder %s type %d position %d latency %d\n", TAG, name, url, decoder, type, pos, latency);
+//	printf("%s name %s url %s decoder %s type %d position %d latency %d\n", TAG, name, url, decoder, type, pos, latency);
 	width = DW/type; height = DH/type;
 	if( type == 1 )
 	{
@@ -169,11 +170,11 @@ int main(int argc, char* argv[])
 		gst_object_unref (h->bus);
 
 		/* Set the pipeline to "playing" state*/
-		g_print ("%s Now playing: %s (name %s)\n", TAG, url, name);
+//		g_print ("%s Now playing: %s (name %s)\n", TAG, url, name);
 		gst_element_set_state (h->pipeline, GST_STATE_PLAYING);
 
 		/* Iterate */
-		g_print ("%s Running...\n", TAG);
+//		g_print ("%s Running...\n", TAG);
 		g_main_loop_run (h->main_loop);
 	}
 	else
@@ -183,10 +184,10 @@ int main(int argc, char* argv[])
 	}
 
 	/* Out of the main loop, clean up nicely */
-	g_print ("%s Returned, stopping playback for %s (name %s)\n", TAG, url, name);
+//	g_print ("%s Returned, stopping playback for %s (name %s)\n", TAG, url, name);
 	gst_element_set_state (h->pipeline, GST_STATE_NULL);
 
-	g_print ("%s Deleting pipeline for %s (name %s)\n", TAG, url, name);
+//	g_print ("%s Deleting pipeline for %s (name %s)\n", TAG, url, name);
 	gst_object_unref (GST_OBJECT (h->pipeline));
 	g_source_remove (h->bus_watch_id);
 	g_main_loop_unref (h->main_loop);
@@ -199,7 +200,7 @@ int main(int argc, char* argv[])
 */
 void sig_handler(int signum)
 {
-    g_print("%s Received signal %d\n", TAG, signum);
+//    g_print("%s Received signal %d\n", TAG, signum);
 	g_main_loop_quit (mosaic->main_loop);
 }
 
