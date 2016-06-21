@@ -55,7 +55,7 @@ int startRec(Camera *h);
 int startMos(Camera *h);
 int startUpload(void);
 void change_mosaic(void);
-void shift_mosaic(void);
+void shift_mosaic(unsigned int value);
 
 void stopUpload(void)
 {
@@ -85,7 +85,7 @@ void freeCamera(Camera *h)
 	}
 }
 
-void free_cameras(void)
+void stopCameras(void)
 {
 	int i;
 	int ret;
@@ -238,7 +238,6 @@ int main(int argc, char **argv)
 			{
 				camera[i] = h;
 				camcnt++;
-				addCamera = false;
 			}
 		}
 		if ((!xmlStrcmp(cur->name, (const xmlChar *)"WiFi")))
@@ -326,7 +325,7 @@ int main(int argc, char **argv)
 
 		usleep(500000);
 	}
-	free_cameras();
+	stopCameras();
 	stopUpload();
 	xmlFreeDoc(doc);
 	return (0);
@@ -343,6 +342,7 @@ void print_help(char *argv)
 void* control_func (void *arg)
 {
 	char c;
+	unsigned int shift;
 	while(run)
 	{
 		c = getc(stdin);
@@ -362,7 +362,11 @@ void* control_func (void *arg)
 				break;
 			case 's':
 				if(mosEna)
-					shift_mosaic();
+				{
+					printf("Enter shift value in range 1-%d>",MIN(mosaic*mosaic, camcnt));
+					scanf("%d",&shift);
+					shift_mosaic(shift);
+				}
 				else
 					printf("\tMOSAIC DISABLED!!!\n");
 				break;
@@ -487,32 +491,49 @@ void change_mosaic(void)
 	}
 }
 
-void shift_mosaic(void)//TODO with parameter
+void shift_mosaic(unsigned int value)
 {
-	int i, cnt;
+	int i, cnt, shift;
 	printf("%s %s\n", TAG, __func__);
 	Camera *h;
 	int wndcnt = mosaic*mosaic;
 
+	if(value < 0)
+		shift = cnt = 1;
+	else if (value > MIN(wndcnt, camcnt))
+		shift = cnt = MIN(wndcnt, camcnt);
+	else
+		shift = cnt = value;
+
 	stop_mosaic(false);
 
-	//Search for camera with position 1	
-	for(i = 0; i < CAM_NUM; i++)
-	{
-		if(camera[i] != NULL)
+	//Clear position for value cameras
+	do{
+		for(i = 0; i < CAM_NUM; i++)
 		{
-			h = camera[i];
-			if(atoi(h->position) == 1)
+			if(camera[i] != NULL)
 			{
-				sprintf(camera[i]->position, "%d", 0);//Clear camera position 1 
-				break;
+				h = camera[i];
+				if(atoi(h->position) == cnt)
+				{
+				printf("%s %s clear pos %s for cam %s\n", TAG, __func__, h->position, h->name);
+					sprintf(camera[i]->position, "%d", 0);
+					cnt--;
+					if(cnt == 0) break;
+				}
 			}
 		}
+	}while(cnt >= 1);
+
+	if( (i + shift) > camcnt )
+	{
+		shift = (i + shift)%camcnt;
+		i = 0;
 	}
 	cnt = 0;
 	//Assign position in mosaic for cameras
 	//Start from next camera in list
-	for(i = i + 1; i < camcnt; i++)
+	for(i = i + shift; i < camcnt; i++)
 	{
 		h = camera[i];
 		sprintf(h->position, "%d", ++cnt);
