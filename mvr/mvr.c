@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
+#include "getch.h"
 
 #define CAM_NUM		32
 #define WIFI_NUM	32
@@ -345,7 +346,8 @@ void* control_func (void *arg)
 	unsigned int shift;
 	while(run)
 	{
-		c = getc(stdin);
+//		c = getc(stdin);
+		c = getch();
 		switch(c)
 		{
 			case 'h':
