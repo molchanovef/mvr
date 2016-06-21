@@ -54,7 +54,7 @@ void sig_handler(int signum);
 int startRec(Camera *h);
 int startMos(Camera *h);
 int startUpload(void);
-void change_mosaic(void);
+void toggle_mosaic(void);
 void shift_mosaic(unsigned int value);
 
 void stopUpload(void)
@@ -356,14 +356,14 @@ void* control_func (void *arg)
 				break;
 			case 'l':
 				if(mosEna)
-					change_mosaic();
+					toggle_mosaic();
 				else
 					printf("\tMOSAIC DISABLED!!!\n");
 				break;
 			case 's':
 				if(mosEna)
 				{
-					printf("Enter shift value in range 1-%d>",MIN(mosaic*mosaic, camcnt));
+					printf("Enter shift value in range 1-%d>", camcnt);
 					scanf("%d",&shift);
 					shift_mosaic(shift);
 				}
@@ -471,7 +471,7 @@ static void stop_mosaic(bool clearPos)
 	}
 }
 
-void change_mosaic(void)
+void toggle_mosaic(void)
 {
 	int i;
 	Camera *h;
@@ -499,11 +499,12 @@ void shift_mosaic(unsigned int value)
 	int wndcnt = mosaic*mosaic;
 
 	if(value < 0)
-		shift = cnt = 1;
-	else if (value > MIN(wndcnt, camcnt))
-		shift = cnt = MIN(wndcnt, camcnt);
+		shift = 1;
+	else if (value > camcnt)
+		shift = camcnt;
 	else
-		shift = cnt = value;
+		shift = value;
+	cnt = MIN(wndcnt, shift);
 
 	stop_mosaic(false);
 
@@ -516,7 +517,7 @@ void shift_mosaic(unsigned int value)
 				h = camera[i];
 				if(atoi(h->position) == cnt)
 				{
-				printf("%s %s clear pos %s for cam %s\n", TAG, __func__, h->position, h->name);
+				printf("clear pos %d for %s\n", cnt, h->name);
 					sprintf(camera[i]->position, "%d", 0);
 					cnt--;
 					if(cnt == 0) break;
