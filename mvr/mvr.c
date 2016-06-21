@@ -69,6 +69,22 @@ void stopUpload(void)
 	}
 }
 
+void freeCamera(Camera *h)
+{
+	if(h != NULL)
+	{
+		free(h->name);
+		free(h->url);
+		free(h->decoder);
+		free(h->recdir);
+		free(h->rectime);
+		free(h->latency);
+		free(h->mosaic);
+		free(h->position);
+		free(h);
+	}
+}
+
 void free_cameras(void)
 {
 	int i;
@@ -92,15 +108,7 @@ void free_cameras(void)
 				printf("\tKill mosPid [%d] return %d\n",h->mosPid, ret);
 				h->mosPid = 0;
 			}
-			free(h->name);
-			free(h->url);
-			free(h->decoder);
-			free(h->recdir);
-			free(h->rectime);
-			free(h->latency);
-			free(h->mosaic);
-			free(h->position);
-			free(h);
+			freeCamera(h);
 		}
 	}
 }
@@ -127,7 +135,8 @@ const char *get_filename_ext(const char *filename) {
 
 int main(int argc, char **argv)
 {
-    int			i, retVal;
+    int			i, j, retVal;
+	bool		addCamera;
 	Camera		*h;
 	Wifi		*w;
 	xmlDocPtr	doc;
@@ -211,8 +220,26 @@ int main(int argc, char **argv)
 			h->position 	= (char*)xmlGetProp(cur, (const xmlChar*)"position");
 			h->recPid		= 0;
 			h->mosPid		= 0;
-			camera[i] 		= h;
-			camcnt++;
+			// Check dublicate cameras (url, name, position)
+			addCamera = true;
+			for(j = 0; j < camcnt; j++)
+			{
+				if( (strcmp(camera[j]->name, h->name) == 0) ||
+					(strcmp(camera[j]->url, h->url) == 0) ||
+					(strcmp(camera[j]->position, h->position) == 0) )
+				{
+					printf("\n\t!!! ERROR !!! Dublicate camera found\n");
+					printf("\tCheck please name, url and position on your xml file.\n");
+					freeCamera(h);
+					addCamera = false;
+				}
+			}
+			if(addCamera)
+			{
+				camera[i] = h;
+				camcnt++;
+				addCamera = false;
+			}
 		}
 		if ((!xmlStrcmp(cur->name, (const xmlChar *)"WiFi")))
 		{
@@ -225,7 +252,7 @@ int main(int argc, char **argv)
 		}
 		cur = cur->next;
 	}
-	
+
 	signal(SIGCHLD, sig_handler);
 
 	for(i = 0; i < CAM_NUM; i++)
@@ -237,11 +264,11 @@ int main(int argc, char **argv)
 				startRec(h);
 			if(mosEna)
 				startMos(h);
-			printf("\t%s Camera[%d]: %s\n", TAG, i, h->name);
+/*			printf("\t%s Camera[%d]: %s\n", TAG, i, h->name);
 			printf("\t\turl: %s decoder: %s\n", h->url, h->decoder);
 			printf("\t\trecdir: %s\n", h->recdir);
 			printf("\t\trectime: %s latency: %s mosaic %s position: %s\n", h->rectime, h->latency, h->mosaic, h->position);
-			printf("\t\trecPid: %d mosPid: %d\n", h->recPid, h->mosPid);
+			printf("\t\trecPid: %d mosPid: %d\n", h->recPid, h->mosPid);*/
 		}
 	}
 
@@ -253,16 +280,16 @@ int main(int argc, char **argv)
 		if(wifi[i] != NULL)
 		{
 			w = wifi[i];
-			printf("\t%s WiFi: %s password %s\n", TAG, w->ssid, w->password);
+			printf("%s WiFi: %s password %s\n", TAG, w->ssid, w->password);
 		}
 	}
 	
 	run = 1;
 	retVal = pthread_create(&pth_control, NULL, &control_func, argv[0]);
 	if (retVal != 0)
-		printf("\n%s can't create thread :[%s]", TAG, strerror(retVal));
+		printf("%s can't create thread :[%s]", TAG, strerror(retVal));
 	else
-	    printf("\n%s Control thread created successfully\n", TAG);
+	    printf("%s Control thread created successfully\n", TAG);
 
 	while(run)
 	{
@@ -331,13 +358,13 @@ void* control_func (void *arg)
 				if(mosEna)
 					change_mosaic();
 				else
-					printf("\t\nMOSAIC DISABLED!!!\n");
+					printf("\tMOSAIC DISABLED!!!\n");
 				break;
 			case 's':
 				if(mosEna)
 					shift_mosaic();
 				else
-					printf("\t\nMOSAIC DISABLED!!!\n");
+					printf("\tMOSAIC DISABLED!!!\n");
 				break;
 		}
 		usleep(100000);
@@ -361,7 +388,7 @@ int startRec(Camera *h)
 {
 	if(h->rectime && h->recdir)
 	{
-		printf("\n\t%s Start recordig for camera %s\n", TAG, h->name);
+		printf("%s Start recordig for camera %s\n", TAG, h->name);
 
 		h->recPid = fork();
 		if(h->recPid == -1)
@@ -382,7 +409,7 @@ int startMos(Camera *h)
 {
 	if( strlen(h->mosaic) && (atoi(h->position) != 0) )
 	{
-		printf("\n\t%s Start mosaic %s pos %s for camera %s \n", TAG, h->mosaic, h->position, h->name);
+		printf("%s Start mosaic %s pos %s for camera %s \n", TAG, h->mosaic, h->position, h->name);
 		h->mosPid = fork();
 		if(h->mosPid == -1)
 		{
@@ -400,7 +427,7 @@ int startMos(Camera *h)
 
 int startUpload(void)
 {
-	printf("\n\t%s Start upload\n", TAG);
+	printf("%s Start upload\n", TAG);
 	uploadPid = fork();
 	if(uploadPid == -1)
 	{
