@@ -7,8 +7,6 @@
 		recdir		- directory for save record files
 		rectime		- time in seconds to split video stream to separate files
 		latency		- gstreamer rtsp element parameter.
-		mosaic		- mosaic type 2 for 2x2 3 for 3x3.
-		position	- position in mosaic 2x2 or 3x3
 	If missing rectime or recdir recording for camera doesn't start
 	If missing mosaic and position - camera doesn't displayed
 	WiFi element:
@@ -21,9 +19,7 @@
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000"
-		mosaic="3"
-		position="1">
+		latency="3000">
 	</Camera>
 	<Camera
 		name="Dome_Gray"
@@ -31,9 +27,7 @@
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000"
-		mosaic="3"
-		position="2">
+		latency="3000">
 	</Camera>
 	<Camera
 		name="Ivideon_Stream_1"
@@ -41,9 +35,7 @@
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="500"
-		mosaic="3"
-		position="4">
+		latency="500">
 	</Camera> 
 	<Camera
 		name="Ivideon_Stream_2"
@@ -51,9 +43,7 @@
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000"
-		mosaic="3"
-		position="5">
+		latency="3000">
 	</Camera>
 	<Camera
 		name="Vadim_2"
@@ -61,9 +51,7 @@
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000"
-		mosaic="3"
-		position="6">
+		latency="3000">
 	</Camera>
 	<Camera
 		name="LLAMP_251"
@@ -71,9 +59,7 @@
 		decoder = "mpeg4"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000"
-		mosaic="3"
-		position="7">
+		latency="3000">
 	</Camera>
 	<Camera
 		name="LLAMP_252"
@@ -81,9 +67,7 @@
 		decoder = "mpeg4"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000"
-		mosaic="3"
-		position="8">
+		latency="3000">
 	</Camera>
 	<Camera
 		name="LLAMP_253"
@@ -91,9 +75,7 @@
 		decoder = "mpeg4"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000"
-		mosaic="3"
-		position="9">
+		latency="3000">
 	</Camera>
 <!--	<Camera
 		name="Camera_168"

@@ -25,7 +25,7 @@ pid_t uploadPid;
 
 const char *LAYER[] = {"SINGLE", "2x2", "3x3"};
 typedef enum layer_s {SINGLE=1, QUAD, NINE} layer_t;
-layer_t mosaic = NINE;
+layer_t mosaic = QUAD;
 
 typedef struct _Camera
 {
@@ -35,8 +35,7 @@ typedef struct _Camera
 	char *recdir;
 	char *rectime;
 	char *latency;
-	char *position;
-	char *mosaic;
+	int position;
 	pid_t recPid;
 	pid_t mosPid;
 } Camera;
@@ -80,8 +79,6 @@ void freeCamera(Camera *h)
 		free(h->recdir);
 		free(h->rectime);
 		free(h->latency);
-		free(h->mosaic);
-		free(h->position);
 		free(h);
 	}
 }
@@ -199,7 +196,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	cur = xmlDocGetRootElement(doc);
-    fprintf(stdout, "Root is <%s> (%i)\n", cur->name, cur->type);
+//    fprintf(stdout, "Root is <%s> (%i)\n", cur->name, cur->type);
 	
 	cur = cur->xmlChildrenNode;
 	camcnt = 0;
@@ -211,14 +208,13 @@ int main(int argc, char **argv)
 			for(i = 0; i < CAM_NUM; i++)
 				if(camera[i] == NULL) break;
 			h = malloc(sizeof(Camera));
+			memset(h, 0, sizeof(Camera));
 			h->name			= (char*)xmlGetProp(cur, (const xmlChar*)"name");
 			h->url			= (char*)xmlGetProp(cur, (const xmlChar*)"url");
 			h->decoder		= (char*)xmlGetProp(cur, (const xmlChar*)"decoder");
 			h->recdir		= (char*)xmlGetProp(cur, (const xmlChar*)"recdir");
 			h->rectime		= (char*)xmlGetProp(cur, (const xmlChar*)"rectime");
 			h->latency		= (char*)xmlGetProp(cur, (const xmlChar*)"latency");
-			h->mosaic	 	= (char*)xmlGetProp(cur, (const xmlChar*)"mosaic");
-			h->position 	= (char*)xmlGetProp(cur, (const xmlChar*)"position");
 			h->recPid		= 0;
 			h->mosPid		= 0;
 			// Check dublicate cameras (url, name, position)
@@ -226,19 +222,20 @@ int main(int argc, char **argv)
 			for(j = 0; j < camcnt; j++)
 			{
 				if( (strcmp(camera[j]->name, h->name) == 0) ||
-					(strcmp(camera[j]->url, h->url) == 0) ||
-					(strcmp(camera[j]->position, h->position) == 0) )
+					(strcmp(camera[j]->url, h->url) == 0) )
 				{
 					printf("\n\t!!! ERROR !!! Dublicate camera found\n");
-					printf("\tCheck please name, url and position on your xml file.\n");
+					printf("\tCheck please name and url on your xml file.\n");
 					freeCamera(h);
 					addCamera = false;
 				}
 			}
 			if(addCamera)
 			{
-				camera[i] = h;
 				camcnt++;
+				if(camcnt <= (mosaic*mosaic))
+					h->position = camcnt;
+				camera[i] = h;
 			}
 		}
 		if ((!xmlStrcmp(cur->name, (const xmlChar *)"WiFi")))
@@ -255,6 +252,9 @@ int main(int argc, char **argv)
 
 	signal(SIGCHLD, sig_handler);
 
+	printf("########################################\n");
+	printf("\tMOSAIC STARTED AT MODE %s\n",LAYER[mosaic-1]);
+	printf("########################################\n");
 	for(i = 0; i < CAM_NUM; i++)
 	{
 		if(camera[i] != NULL)
@@ -267,9 +267,9 @@ int main(int argc, char **argv)
 /*			printf("\t%s Camera[%d]: %s\n", TAG, i, h->name);
 			printf("\t\turl: %s decoder: %s\n", h->url, h->decoder);
 			printf("\t\trecdir: %s\n", h->recdir);
-			printf("\t\trectime: %s latency: %s mosaic %s position: %s\n", h->rectime, h->latency, h->mosaic, h->position);
-			printf("\t\trecPid: %d mosPid: %d\n", h->recPid, h->mosPid);*/
-		}
+			printf("\t\trectime: %s latency: %s position: %d\n", h->rectime, h->latency, h->position);
+			printf("\t\trecPid: %d mosPid: %d\n", h->recPid, h->mosPid);
+*/		}
 	}
 
 	if(uplEna)
@@ -406,16 +406,18 @@ int startRec(Camera *h)
 		{
 			execl("record", " ", h->rectime, h->recdir, h->url, h->decoder, h->name, NULL);
 		}
-//		sleep(1);
 	}
 	return 0;
 }
 
 int startMos(Camera *h)
 {
-	if( strlen(h->mosaic) && (atoi(h->position) != 0) )
+	char* m;
+	char* p;
+
+	if( h->position != 0 )
 	{
-		printf("%s Start mosaic %s pos %s for camera %s \n", TAG, h->mosaic, h->position, h->name);
+		printf("%s Start mosaic %s for camera %s in position %d\n", TAG, LAYER[mosaic-1], h->name, h->position);
 		h->mosPid = fork();
 		if(h->mosPid == -1)
 		{
@@ -424,10 +426,15 @@ int startMos(Camera *h)
 		}
 		if(h->mosPid == 0)
 		{
-			execl("mosaic", " ", h->url, h->decoder, h->mosaic, h->position, h->latency, h->name, NULL);
+			m = malloc(1);
+			p = malloc(1);
+			sprintf(m, "%d", mosaic);
+			sprintf(p, "%d", h->position);
+			execl("mosaic", " ", h->url, h->decoder, m, p, h->latency, h->name, NULL);
+			free(m);
+			free(p);
 		}
 	}
-//	sleep(1);
 	return 0;
 }
 
@@ -457,11 +464,9 @@ static void stop_mosaic(bool clearPos)
 		if(camera[i] != NULL)
 		{
 			h = camera[i];
-			//Set new mosaic type for all cameras in list
-			sprintf(h->mosaic, "%d", mosaic);
 			//Clear positions for all cameras only when change mosaic type
 			if(clearPos)
-				sprintf(h->position, "%d", 0);
+				h->position = 0;
 				
 			if(h->mosPid != 0)
 			{
@@ -479,7 +484,7 @@ void toggle_mosaic(void)
 	Camera *h;
 	mosaic++;
 	if (mosaic > NINE) mosaic = SINGLE;
-	printf("%s Change mosaic to %s\n", TAG, LAYER[mosaic-1]);
+	printf("%s Toggle mosaic mode to %s\n", TAG, LAYER[mosaic-1]);
 	stop_mosaic(true);
 	//Assign positions for cameras
 	for(i = 0; i < MIN(mosaic*mosaic, camcnt); i++)
@@ -487,7 +492,7 @@ void toggle_mosaic(void)
 		if(camera[i] != NULL)
 		{
 			h = camera[i];
-			sprintf(h->position, "%d", i + 1);
+			h->position = i + 1;
 			startMos(h);
 		}
 	}
@@ -517,10 +522,9 @@ void shift_mosaic(unsigned int value)
 			if(camera[i] != NULL)
 			{
 				h = camera[i];
-				if(atoi(h->position) == cnt)
+				if(h->position == cnt)
 				{
-				printf("clear pos %d for %s\n", cnt, h->name);
-					sprintf(camera[i]->position, "%d", 0);
+					camera[i]->position = 0;
 					cnt--;
 					if(cnt == 0) break;
 				}
@@ -539,7 +543,7 @@ void shift_mosaic(unsigned int value)
 	for(i = i + shift; i < camcnt; i++)
 	{
 		h = camera[i];
-		sprintf(h->position, "%d", ++cnt);
+		h->position = ++cnt;
 		startMos(h);
 		if(cnt == wndcnt) break;
 	}
@@ -550,7 +554,7 @@ void shift_mosaic(unsigned int value)
 		for(i = 0; i < camcnt; i++)
 		{
 			h = camera[i];
-			sprintf(h->position, "%d", ++cnt);
+			h->position = ++cnt;
 			startMos(h);
 			if(cnt == wndcnt || cnt == camcnt) break;//in case of camcnt < wndcnt
 		}
