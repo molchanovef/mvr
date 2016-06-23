@@ -4,9 +4,9 @@ TOP=$(shell pwd)
 
 SCRIPTS=$(wildcard scripts/*.sh)
 
-.PHONY : all pre clean mosaic record upload mvr install scripts
+.PHONY : all pre clean lib rtsp mosaic record upload mvr install scripts
 
-all: clean pre mosaic record upload mvr
+all: clean pre lib rtsp mosaic record upload mvr
 
 pre:
 	@mkdir -p ${TOP}/${BINARES}
@@ -16,12 +16,20 @@ pre:
 clean:
 	@rm -f ${TOP}/${BINARES}/${USER}/${ARCH}/*
 	@${MAKE} -C gst $@
+	@${MAKE} -C lib $@
+	@${MAKE} -C rtsp $@
 	@${MAKE} -C mosaic $@
 	@${MAKE} -C record $@
 	@${MAKE} -C upload $@
 	@${MAKE} -C mvr $@
 	
 gst:
+	@${MAKE} -C $@
+
+lib:
+	@${MAKE} -C $@
+	
+rtsp:
 	@${MAKE} -C $@
 
 mosaic:
