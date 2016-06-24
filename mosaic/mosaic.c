@@ -4,6 +4,7 @@
 #include <unistd.h> //fork
 #include <gst/gst.h>
 #include <glib.h>
+#include "avi.h"
 
 #define DW		800
 #define DH		480
@@ -77,10 +78,11 @@ int main(int argc, char* argv[])
 	}
 	mosaic = h;
 	
-	if(argc < 1)
-		print_help(argv[0]);
 	if(argc < 2)
+	{
+		print_help(argv[0]);
 		strcpy(url, URL);
+	}
 	else
 		strcpy(url,argv[1]);
 	if(argc < 3)
@@ -154,9 +156,9 @@ int main(int argc, char* argv[])
 
 #ifdef CROSS
 	if(strcmp(decoder, "h264") == 0)
-	 	descr = g_strdup_printf ("rtspsrc location=%s latency=%d ! gstrtpjitterbuffer ! rtph264depay ! vpudec output-format=1 ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", url, latency, left, top, width, height);
+	 	descr = g_strdup_printf ("rtspsrc location=%s latency=%d ! gstrtpjitterbuffer ! rtph264depay ! vpudec output-format=1 frame-plus=10 low-latency=true ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", url, latency, left, top, width, height);
 	else if(strcmp(decoder, "mpeg4") == 0)
-	 	descr = g_strdup_printf ("rtspsrc location=%s latency=%d ! gstrtpjitterbuffer ! rtpmp4vdepay ! vpudec output-format=1 ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", url, latency, left, top, width, height);
+	 	descr = g_strdup_printf ("rtspsrc location=%s latency=%d ! gstrtpjitterbuffer ! rtpmp4vdepay ! vpudec output-format=1 frame-plus=10 low-latency=true ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", url, latency, left, top, width, height);
 #else
  	descr = g_strdup_printf ("rtspsrc location=%s latency=%d ! rtph264depay ! h264parse ! ffdec_h264 ! ffmpegcolorspace ! autovideosink", url, latency);
 #endif
