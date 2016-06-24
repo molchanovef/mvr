@@ -1,4 +1,5 @@
--include ../Makefile.rules
+TOP=../
+-include ${TOP}/Makefile.rules
 
 # -print-search-dirs
 SOURCES=$(wildcard *.c)
@@ -9,8 +10,9 @@ SCRIPTS=xml2.xml xml3.xml
 ifdef CROSS
 SYSROOTFS=/home/mef/iMX6/fsl-release-bsp/build-dfb/tmp/sysroots/imx6qsabresd
 CFLAGS += -DCROSS
-CFLAGS += -I${SYSROOTFS}/usr/include/libxml2
-LDFLAGS = -lxml2 -pthread 
+CFLAGS += -I${SYSROOTFS}/usr/include/libxml2 \
+		  -I${INCLUDE_DIR}
+LDFLAGS = -lxml2 -pthread -L${LIB_DIR} -lipc
 else
 #run pkg-config --cflags libxml-2.0 to get CFLAGS
 CFLAGS += -I/usr/include/libxml2
@@ -18,20 +20,20 @@ CFLAGS += -I/usr/include/libxml2
 LDFLAGS = -lxml2 -pthread 
 endif
 
-.PHONY : all build install clean install
+.PHONY : all install clean
 
-all: $(SOURCES) $(EXECUTABLE) install
+all: $(EXECUTABLE)
 	
 $(EXECUTABLE): $(OBJECTS) 
 	@echo "---------- Build ${EXECUTABLE} application"
 #BUG in ubuntu 14.04 LDFLAGS must be in the end
-	$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
+	-@$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
 
 .c.o:
-	@echo "---------- Build objects: ${OBJECTS}"
-	$(CC) $(CFLAGS) $< -o $@
+	@echo "---------- Build $<"
+	-@$(CC) $(CFLAGS) $< -o $@
 
-install:
+install: $(EXECUTABLE)
 	@echo "---------- Install ${EXECUTABLE} application on ${INSTALL_DIR}"
 	@$ cp ${EXECUTABLE} ${INSTALL_DIR}
 	-@$ cp ${SCRIPTS} ${INSTALL_DIR}

@@ -2,16 +2,29 @@
 
 TOP=$(shell pwd)
 
-SCRIPTS=$(wildcard scripts/*.sh)
+#SCRIPTS=$(wildcard scripts/*.sh)
+SCRIPTS = scripts/video.sh
 
-.PHONY : all pre clean lib rtsp mosaic record upload mvr install scripts
+.PHONY : all pre clean build lib rtsp mosaic record upload mvr install scripts
 
-all: clean pre lib rtsp mosaic record upload mvr
+all: clean pre lib rtsp mosaic record upload mvr install
+
+build: pre lib rtsp mosaic record upload mvr
 
 pre:
 	@mkdir -p ${TOP}/${BINARES}
 	@mkdir -p ${TOP}/${BINARES}/${USER}
 	@mkdir -p ${TOP}/${BINARES}/${USER}/${ARCH}
+
+install:
+#	@${MAKE} -C gst $@
+	@$ sudo scp ${SCRIPTS} ${TARGET}
+	@${MAKE} -C lib $@
+	@${MAKE} -C rtsp $@
+	@${MAKE} -C mosaic $@
+	@${MAKE} -C record $@
+	@${MAKE} -C upload $@
+	@${MAKE} -C mvr $@
 	
 clean:
 	@rm -f ${TOP}/${BINARES}/${USER}/${ARCH}/*
@@ -43,13 +56,6 @@ record:
 
 mvr:
 	@${MAKE} -C $@
-
-install:
-	@${MAKE} -C gst $@
-	@${MAKE} -C mosaic $@
-	@${MAKE} -C record $@
-	@${MAKE} -C upload $@
-	@${MAKE} -C mvr $@
 
 scripts:
 	@$ sudo scp ${SCRIPTS} ${TARGET}

@@ -21,23 +21,23 @@ CFLAGS += -pthread -I/usr/include/gstreamer-0.10 -I/usr/include/glib-2.0 -I/usr/
 LDFLAGS = -pthread -lgstreamer-0.10 -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lxml2 -lglib-2.0
 endif
 
-.PHONY : all build install clean target
+.PHONY : all install clean
 
-all: $(SOURCES) $(EXECUTABLE) install
+all: $(EXECUTABLE)
 	
 $(EXECUTABLE): $(OBJECTS) 
 	@echo "---------- Build ${EXECUTABLE} application"
 ifdef CROSS
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+	-@$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
 else
 	libtool --mode=link ${CC} -Wall `pkg-config --cflags --libs gstreamer-0.10` ${OBJECTS} -o $@
 endif
 
 .c.o:
-	@echo "---------- Build objects: ${OBJECTS}"
-	$(CC) $(CFLAGS) $< -o $@
+	@echo "---------- Build $<"
+	-@$(CC) $(CFLAGS) $< -o $@
 
-install:
+install: $(EXECUTABLE)
 	@echo "---------- Install ${EXECUTABLE} application on ${INSTALL_DIR}"
 	@$ cp ${EXECUTABLE} ${INSTALL_DIR}
 #	@$ cp ${SCRIPTS} ${INSTALL_DIR}

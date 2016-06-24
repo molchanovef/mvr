@@ -8,19 +8,19 @@ SCRIPTS=
 
 LDFLAGS = -pthread
 
-.PHONY : all build install clean install
+.PHONY : all install clean
 
-all: $(SOURCES) $(EXECUTABLE) install
+all: $(EXECUTABLE)
 	
 $(EXECUTABLE): $(OBJECTS) 
 	@echo "---------- Build ${EXECUTABLE} application"
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+	-@$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
 
 .c.o:
-	@echo "---------- Build objects: ${OBJECTS}"
-	$(CC) $(CFLAGS) $< -o $@
+	@echo "---------- Build $<"
+	-@$(CC) $(CFLAGS) $< -o $@
 
-install:
+install: $(EXECUTABLE)
 	@echo "---------- Install ${EXECUTABLE} application on ${INSTALL_DIR}"
 	@$ cp ${EXECUTABLE} ${INSTALL_DIR}
 #	-@$ cp ${SCRIPTS} ${INSTALL_DIR}

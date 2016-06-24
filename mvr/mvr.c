@@ -10,6 +10,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include "getch.h"
+#include "avi.h"
 
 #define CAM_NUM		32
 #define WIFI_NUM	32
@@ -189,6 +190,7 @@ int main(int argc, char **argv)
 	
     printf("%s filename: %s recEna = %d mosEna = %d uplEna = %d\n", TAG, filename, recEna, mosEna, uplEna);
 
+	avi_init();
 	doc = xmlParseFile(filename);
 	if(doc == NULL)
 	{
@@ -329,6 +331,7 @@ int main(int argc, char **argv)
 	stopCameras();
 	stopUpload();
 	xmlFreeDoc(doc);
+	avi_exit();
 	return (0);
 }
 

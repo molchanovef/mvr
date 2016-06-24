@@ -378,10 +378,11 @@ int main(int argc, char* argv[])
 	gchar *descr;
 	GError *error = NULL;
 
-	if(argc < 1)
-		print_help(argv[0]);
 	if(argc < 2)
+	{
+		print_help(argv[0]);
 		duration = DURATION;
+	}
 	else
 		duration = atoi(argv[1]);
 	if(argc < 3)

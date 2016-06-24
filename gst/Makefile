@@ -6,21 +6,21 @@ OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=quad
 SCRIPTS=quad.sh
 
-.PHONY : all build install clean target
+.PHONY : all install clean
 
-all: $(SOURCES) $(EXECUTABLE) install
+all:$(EXECUTABLE)
 	
 $(EXECUTABLE): $(OBJECTS) 
 	@echo "---------- Build ${EXECUTABLE} application"
 ifdef CROSS
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+	-@$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
 else
 	libtool --mode=link ${CC} -Wall `pkg-config --cflags --libs gstreamer-0.10` ${OBJECTS} -o $@
 endif
 
 .c.o:
-	@echo "---------- Build objects: ${OBJECTS}"
-	$(CC) $(CFLAGS) $< -o $@
+	@echo "---------- Build $<"
+	-@$(CC) $(CFLAGS) $< -o $@
 
 install:
 	@echo "---------- Install ${EXECUTABLE} application on ${INSTALL_DIR}"

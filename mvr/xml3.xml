@@ -19,7 +19,7 @@
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000">
+		latency="0">
 	</Camera>
 	<Camera
 		name="Dome_Gray"
@@ -27,7 +27,7 @@
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000">
+		latency="0">
 	</Camera>
 	<Camera
 		name="Ivideon_Stream_1"
@@ -35,7 +35,7 @@
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="500">
+		latency="0">
 	</Camera> 
 	<Camera
 		name="Ivideon_Stream_2"
@@ -43,7 +43,7 @@
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000">
+		latency="0">
 	</Camera>
 	<Camera
 		name="Vadim_2"
@@ -51,7 +51,7 @@
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000">
+		latency="0">
 	</Camera>
 	<Camera
 		name="LLAMP_251"
@@ -59,7 +59,7 @@
 		decoder = "mpeg4"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000">
+		latency="0">
 	</Camera>
 	<Camera
 		name="LLAMP_252"
@@ -67,7 +67,7 @@
 		decoder = "mpeg4"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000">
+		latency="0">
 	</Camera>
 	<Camera
 		name="LLAMP_253"
@@ -75,7 +75,7 @@
 		decoder = "mpeg4"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000">
+		latency="0">
 	</Camera>
 <!--	<Camera
 		name="Camera_168"

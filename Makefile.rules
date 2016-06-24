@@ -1,6 +1,8 @@
-#CROSS=/home/mef/iMX6/fsl-release-bsp/build-dfb/tmp/sysroots/x86_64-linux/usr/bin/cortexa9hf-vfp-neon-poky-linux-gnueabi/arm-poky-linux-gnueabi-
+CROSS=/home/mef/iMX6/fsl-release-bsp/build-dfb/tmp/sysroots/x86_64-linux/usr/bin/cortexa9hf-vfp-neon-poky-linux-gnueabi/arm-poky-linux-gnueabi-
 
 BINARES=bin
+INCLUDE_DIR=${TOP}/include/
+LIB_DIR=${TOP}/lib/
 
 ifdef CROSS
 ARCH := armv7l
@@ -18,6 +20,7 @@ STRIP=${CROSS}strip
 CFLAGS = -c -Wall
 
 INSTALL_DIR = ../${BINARES}/${USER}/${ARCH}
-TARGET=root@192.168.11.145:/home/root
+TARGET=root@192.168.1.7:/tvh
+TARGET_LIB=root@192.168.1.7:/usr/lib
 
 
