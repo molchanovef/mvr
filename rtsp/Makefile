@@ -10,15 +10,20 @@ ifdef CROSS
 SYSROOTFS=/home/mef/iMX6/fsl-release-bsp/build-dfb/tmp/sysroots/imx6qsabresd
 CFLAGS += -DCROSS
 CFLAGS += -I${SYSROOTFS}/usr/include/gstreamer-0.10 \
-		 -I${SYSROOTFS}/usr/include/glib-2.0 \
-		 -I${SYSROOTFS}/usr/lib/glib-2.0/include \
-		 -I${SYSROOTFS}/usr/include/libxml2
-LDFLAGS = -lgstreamer-0.10 -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lxml2 -lglib-2.0 -pthread 
+		  -I${SYSROOTFS}/usr/include/glib-2.0 \
+		  -I${SYSROOTFS}/usr/lib/glib-2.0/include \
+		  -I${SYSROOTFS}/usr/include/libxml2 \
+		  -I${INCLUDE_DIR}
+LDFLAGS = -lgstreamer-0.10 -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lxml2 -lglib-2.0 -pthread -L${LIB_DIR} -lipc
 else
 #run pkg-config --cflags gstreamer-0.10 to get CFLAGS
-CFLAGS += -pthread -I/usr/include/gstreamer-0.10 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/libxml2
+CFLAGS +=	-I/usr/include/gstreamer-0.10 \
+			-I/usr/include/glib-2.0 \
+			-I/usr/lib/x86_64-linux-gnu/glib-2.0/include \
+			-I/usr/include/libxml2 \
+			-I${INCLUDE_DIR}
 #run pkg-config --libs gstreamer-0.10 to get LDFLAGS
-LDFLAGS = -pthread -lgstreamer-0.10 -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lxml2 -lglib-2.0
+LDFLAGS = -pthread -lgstreamer-0.10 -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lxml2 -lglib-2.0 -L${LIB_DIR} -lipc
 endif
 
 .PHONY : all install clean

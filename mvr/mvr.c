@@ -238,6 +238,7 @@ int main(int argc, char **argv)
 				if(camcnt <= (mosaic*mosaic))
 					h->position = camcnt;
 				camera[i] = h;
+//				int avi_set_stream(int idx, int format, int width, int height)
 			}
 		}
 		if ((!xmlStrcmp(cur->name, (const xmlChar *)"WiFi")))
@@ -407,7 +408,7 @@ int startRec(Camera *h)
 		}
 		if(h->recPid == 0)
 		{
-			execl("record", " ", h->rectime, h->recdir, h->url, h->decoder, h->name, NULL);
+			execl("record", " ", h->url, h->decoder, h->recdir, h->rectime, h->name, NULL);
 		}
 	}
 	return 0;

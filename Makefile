@@ -18,13 +18,13 @@ pre:
 
 install:
 #	@${MAKE} -C gst $@
-	@$ sudo scp ${SCRIPTS} ${TARGET}
 	@${MAKE} -C lib $@
 	@${MAKE} -C rtsp $@
 	@${MAKE} -C mosaic $@
 	@${MAKE} -C record $@
 	@${MAKE} -C upload $@
 	@${MAKE} -C mvr $@
+	@$ sudo scp ${SCRIPTS} ${TARGET}
 	
 clean:
 	@rm -f ${TOP}/${BINARES}/${USER}/${ARCH}/*

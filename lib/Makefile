@@ -14,7 +14,7 @@ install:
 	@$ cp lib*.so* ${INSTALL_DIR}
 ifdef CROSS
 	@echo "---------- Install libraries on ${TARGET}"
-	-@$ sudo scp lib*.so* ${TARGET_LIB}
+	-@$ sudo scp lib*.so* ${TARGET}
 endif
 
 clean:

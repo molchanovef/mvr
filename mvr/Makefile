@@ -5,7 +5,7 @@ TOP=../
 SOURCES=$(wildcard *.c)
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=mvr
-SCRIPTS=xml2.xml xml3.xml
+SCRIPTS=xml.xml
 
 ifdef CROSS
 SYSROOTFS=/home/mef/iMX6/fsl-release-bsp/build-dfb/tmp/sysroots/imx6qsabresd
@@ -15,9 +15,9 @@ CFLAGS += -I${SYSROOTFS}/usr/include/libxml2 \
 LDFLAGS = -lxml2 -pthread -L${LIB_DIR} -lipc
 else
 #run pkg-config --cflags libxml-2.0 to get CFLAGS
-CFLAGS += -I/usr/include/libxml2
+CFLAGS += -I/usr/include/libxml2 -I${INCLUDE_DIR}
 #run pkg-config --libs libxml-2.0 to get LDFLAGS
-LDFLAGS = -lxml2 -pthread 
+LDFLAGS = -lxml2 -pthread -L${LIB_DIR} -lipc
 endif
 
 .PHONY : all install clean

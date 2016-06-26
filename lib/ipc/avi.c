@@ -15,8 +15,8 @@
 //#define PROFILING
 
 #define PREFIX	"/tvh/av/"
-#define NUM_STREAMS	4
-#define MAX_FRAMES	64
+#define NUM_STREAMS	32
+#define MAX_FRAMES	8
 #define MEM_LIMIT	(2*1024*1024)
 
 typedef struct frame_s

@@ -7,10 +7,7 @@
 		recdir		- directory for save record files
 		rectime		- time in seconds to split video stream to separate files
 		latency		- gstreamer rtsp element parameter.
-		mosaic		- mosaic typ 2 for 2x2 3 for 3x3.
-		position	- position in mosaic 2x2			3x3
 	If missing rectime or recdir recording for camera doesn't start
-	If missing mosaic and position - camera doesn't displayed
 	WiFi element:
 		ssid, password.
 	-->
@@ -21,7 +18,7 @@
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000">
+		latency="0">
 	</Camera>
 	<Camera
 		name="Dome_Gray"
@@ -29,27 +26,31 @@
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="1000"
-		mosaic="2"
-		position="3">
+		latency="0">
 	</Camera>
 	<Camera
 		name="Ivideon_Stream_1"
-		url="rtsp://admin:9999@192.168.11.94:8554/Stream1"
+		url="rtsp://admin:9999@192.168.11.92:8554/Stream1"
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="500">
+		latency="0">
 	</Camera> 
 	<Camera
 		name="Ivideon_Stream_2"
-		url="rtsp://admin:9999@192.168.11.94:8555/Stream2"
+		url="rtsp://admin:9999@192.168.11.92:8555/Stream2"
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000"
-		mosaic="2"
-		position="4">
+		latency="0">
+	</Camera>
+	<Camera
+		name="Vadim_2"
+		url="rtsp://admin:9999@192.168.11.91:8555/Stream2"
+		decoder = "h264"
+		recdir="/media/sda1/MVR"
+		rectime="60"
+		latency="0">
 	</Camera>
 	<Camera
 		name="LLAMP_251"
@@ -57,9 +58,15 @@
 		decoder = "mpeg4"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="300"
-		mosaic="2"
-		position="1">
+		latency="0">
+	</Camera>
+	<Camera
+		name="LLAMP_252"
+		url="rtsp://admin:9999@192.168.11.252:554/mpeg4"
+		decoder = "mpeg4"
+		recdir="/media/sda1/MVR"
+		rectime="60"
+		latency="0">
 	</Camera>
 	<Camera
 		name="LLAMP_253"
@@ -67,9 +74,7 @@
 		decoder = "mpeg4"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="300"
-		mosaic="2"
-		position="2">
+		latency="0">
 	</Camera>
 <!--	<Camera
 		name="Camera_168"

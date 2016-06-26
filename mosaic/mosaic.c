@@ -8,10 +8,6 @@
 
 #define DW		800
 #define DH		480
-#define BORDER	5//minimum 2 cause 1 pixel used for black border
-//#define URL "rtsp://admin:9999@192.168.11.94:8555/Stream2"
-#define URL	"rtsp://admin:admin@192.168.1.200/0"
-#define DECODER	"h264"
 #define TAG		"MOSAIC:"
 
 typedef struct _Mosaic
@@ -28,7 +24,7 @@ void sig_handler(int signum);
 
 void print_help(char *argv)
 {
-	printf("Usage %s <rtsp url> <decoder_type> <type(2,3) 2x2 or 3x3> <position 1-4 or 1-9> <latency ms>\n",argv);
+	printf("Usage %s <rtsp url> <name> <decoder_type> <type(1,2,3) single, 2x2 or 3x3> <position 1-4 or 1-9> <latency ms>\n",argv);
 }
 
 static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer ptr)
@@ -78,31 +74,17 @@ int main(int argc, char* argv[])
 	}
 	mosaic = h;
 	
-	if(argc < 2)
-	{
+	if(argc < 7)
 		print_help(argv[0]);
-		strcpy(url, URL);
-	}
 	else
+	{
 		strcpy(url,argv[1]);
-	if(argc < 3)
-		strcpy(decoder, DECODER);
-	else
-		strcpy(decoder, argv[2]);
-	if(argc < 4)
-		type = 2;
-	else
-		type = atoi(argv[3]);
-	if(argc < 5)
-		pos = 1;
-	else
-		pos = atoi(argv[4]);
-	if(argc < 6)
-		latency = 3000;
-	else
-		latency = atoi(argv[5]);
-	if(argc == 7)
-		strcpy(name, argv[6]);
+		strcpy(name, argv[2]);
+		strcpy(decoder, argv[3]);
+		type = atoi(argv[4]);
+		pos = atoi(argv[5]);
+		latency = atoi(argv[6]);
+	}
 		
 //	printf("%s name %s url %s decoder %s type %d position %d latency %d\n", TAG, name, url, decoder, type, pos, latency);
 	width = DW/type; height = DH/type;

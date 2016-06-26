@@ -56,11 +56,6 @@ int createNewRecordFile(char * fn);
 void tvhIPCAMworkaround(GstBuffer *buffer);
 void print_buffer(GstBuffer *buf);
 
-void print_help(char *argv)
-{
-	g_print("Usage %s <duration> <base dir> <rtsp url> <decoder> [name]\n",argv);
-}
-
 static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data)
 {
 	switch (GST_MESSAGE_TYPE (msg))
@@ -371,6 +366,11 @@ static void new_audio_buffer (GstElement *sink) {
 }
 #endif
 
+void print_help(char *argv)
+{
+	g_print("Usage %s <rtsp url> <decoder> <base dir> <duration> [name]\n",argv);
+}
+
 int main(int argc, char* argv[])
 {
 //	const gchar *nano_str;
@@ -378,29 +378,19 @@ int main(int argc, char* argv[])
 	gchar *descr;
 	GError *error = NULL;
 
-	if(argc < 2)
-	{
-		print_help(argv[0]);
-		duration = DURATION;
-	}
-	else
-		duration = atoi(argv[1]);
-	if(argc < 3)
-		strcpy(baseDir, BASE_DIR);
-	else
-		strcpy(baseDir,argv[2]);
-	if(argc < 4)
-		strcpy(url, URL);
-	else
-		strcpy(url, argv[3]);
 	if(argc < 5)
-		strcpy(decoder, DECODER);
+		print_help(argv[0]);
 	else
-		strcpy(decoder, argv[4]);
-	if(argc < 6)
-		searcIPinURL(url, camFolder);
-	else
-		strcpy(camFolder, argv[5]);
+	{
+		strcpy(url, argv[1]);
+		strcpy(decoder, argv[2]);
+		strcpy(baseDir,argv[3]);
+		duration = atoi(argv[4]);
+		if(argc < 6)
+			searcIPinURL(url, camFolder);
+		else
+			strcpy(camFolder, argv[5]);
+	}
 		
 	signal(SIGINT, sig_handler);
 
