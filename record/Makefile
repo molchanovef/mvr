@@ -41,6 +41,8 @@ install: $(EXECUTABLE)
 	@echo "---------- Install ${EXECUTABLE} application on ${INSTALL_DIR}"
 	@$ cp ${EXECUTABLE} ${INSTALL_DIR}
 #	@$ cp ${SCRIPTS} ${INSTALL_DIR}
+
+scp: install
 ifdef CROSS
 	@echo "---------- Install ${EXECUTABLE} application on ${TARGET}"
 	-@$ sudo scp ${EXECUTABLE} ${TARGET}

@@ -30,7 +30,7 @@
 	</Camera>
 	<Camera
 		name="Ivideon_Stream_1"
-		url="rtsp://admin:9999@192.168.11.92:8554/Stream1"
+		url="rtsp://admin:9999@192.168.11.67:8554/Stream1"
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
@@ -38,7 +38,7 @@
 	</Camera> 
 	<Camera
 		name="Ivideon_Stream_2"
-		url="rtsp://admin:9999@192.168.11.92:8555/Stream2"
+		url="rtsp://admin:9999@192.168.11.67:8555/Stream2"
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"

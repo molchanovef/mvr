@@ -9,9 +9,11 @@ ipc: ipc/avi.o ipc/mylog.o
 	$(CC) -shared -o libipc.so ipc/avi.o ipc/mylog.o
 	$(STRIP) libipc.so
 
-install:
+install: ipc
 	@echo "---------- Install libraries"
 	@$ cp lib*.so* ${INSTALL_DIR}
+
+scp: install
 ifdef CROSS
 	@echo "---------- Install libraries on ${TARGET}"
 	-@$ sudo scp lib*.so* ${TARGET}

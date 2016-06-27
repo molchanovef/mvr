@@ -16,6 +16,4 @@ mkdir /tvh
 fi
 mount -t tmpfs -o size=128M,nr_inodes=10k,mode=0755 tmpfs /tvh
 
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tvh/lib
-export PATH=$PATH:/tvh/lib
 exit 0

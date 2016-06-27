@@ -25,6 +25,7 @@ void sig_handler(int signum);
 void print_help(char *argv)
 {
 	printf("Usage %s <rtsp url> <name> <decoder_type> <type(1,2,3) single, 2x2 or 3x3> <position 1-4 or 1-9> <latency ms>\n",argv);
+	exit(1);
 }
 
 static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer ptr)

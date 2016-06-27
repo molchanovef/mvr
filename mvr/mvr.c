@@ -408,7 +408,7 @@ int startRec(Camera *h)
 		}
 		if(h->recPid == 0)
 		{
-			execl("record", " ", h->url, h->decoder, h->recdir, h->rectime, h->name, NULL);
+			execlp("record", " ", h->url, h->decoder, h->recdir, h->rectime, h->name, NULL);
 		}
 	}
 	return 0;
@@ -434,7 +434,7 @@ int startMos(Camera *h)
 			p = malloc(1);
 			sprintf(m, "%d", mosaic);
 			sprintf(p, "%d", h->position);
-			execl("mosaic", " ", h->url, h->decoder, m, p, h->latency, h->name, NULL);
+			execlp("mosaic", " ", h->url, h->name, h->decoder, m, p, h->latency, NULL);
 			free(m);
 			free(p);
 		}
@@ -453,7 +453,7 @@ int startUpload(void)
 	}
 	if(uploadPid == 0)
 	{
-		execl("upload", " ", NULL);
+		execlp("upload", " ", NULL);
 	}
 	return 0;
 }

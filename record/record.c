@@ -369,6 +369,7 @@ static void new_audio_buffer (GstElement *sink) {
 void print_help(char *argv)
 {
 	g_print("Usage %s <rtsp url> <decoder> <base dir> <duration> [name]\n",argv);
+	exit(1);
 }
 
 int main(int argc, char* argv[])
@@ -454,7 +455,7 @@ int main(int argc, char* argv[])
 	gst_element_set_state (pipeline, GST_STATE_PLAYING);
 
 	/* Iterate */
-	g_print ("%s Running...\n", TAG);
+//	g_print ("%s Running...\n", TAG);
 	g_main_loop_run (main_loop);
 	
 finish:
