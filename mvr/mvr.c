@@ -143,7 +143,7 @@ int main(int argc, char **argv)
 	xmlNodePtr	cur;
 	
     recEna = mosEna = uplEna = 1;
-    if(argc >= 2)
+    if(argc > 1)
     {
 		if(strcmp(argv[1],"help") == 0 || strcmp(argv[1],"-help") == 0 || strcmp(argv[1],"--help") == 0 || strcmp(argv[1],"-h") == 0)
 			print_usage(argv[0]);
@@ -164,13 +164,13 @@ int main(int argc, char **argv)
 					print_usage(argv[0]);
 				}
 			}
-			else
+/*			else
 			{
 				filename = argv[i];
-			}
+			}*/
     	}
     }
-    else
+/*    else
     {
     	print_usage(argv[0]);
     }
@@ -188,11 +188,11 @@ int main(int argc, char **argv)
 	    	print_usage(argv[0]);
 		}
 	}
-	
-    printf("%s filename: %s recEna = %d mosEna = %d uplEna = %d\n", TAG, filename, recEna, mosEna, uplEna);
+*/	
+    printf("%s filename: %s recEna = %d mosEna = %d uplEna = %d\n", TAG, XMLFILE, recEna, mosEna, uplEna);
 
 	avi_init();
-	doc = xmlParseFile(filename);
+	doc = xmlParseFile(XMLFILE);
 	if(doc == NULL)
 	{
 		printf("\t\n%s ERROR!!! Not a valid xml file\n\n", TAG);
