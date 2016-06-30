@@ -16,6 +16,7 @@
 #define WIFI_NUM	32
 #define TAG			"MVR:"
 #define MIN(a,b)	((a)<(b)?(a):(b))
+#define XMLFILE		"/tvh/xml.xml"
 
 pthread_t pth_control;
 int run;
@@ -329,6 +330,15 @@ int main(int argc, char **argv)
 
 		usleep(500000);
 	}
+
+	for(i = 0; i < WIFI_NUM; i++)
+	{
+		if(wifi[i] != NULL)
+		{
+			free(wifi[i]);
+		}
+	}
+
 	stopCameras();
 	stopUpload();
 	xmlFreeDoc(doc);

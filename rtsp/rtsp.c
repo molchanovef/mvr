@@ -5,7 +5,6 @@
 #include <glib.h>
 
 #define TAG			"RTSP:"
-#define DECODER		"h264"
 
 GMainLoop *main_loop;  /* GLib's Main Loop */
 GstElement 	*pipeline, *rtspsrc, *vsink;
@@ -98,7 +97,7 @@ int main(int argc, char* argv[])
 	vsink = gst_bin_get_by_name(GST_BIN(pipeline), "vsink");
 	/* Configure vsink */
 	g_object_set (vsink, "sync", FALSE, "max-buffers", "1000", "drop", FALSE, "emit-signals", TRUE, NULL);
-	g_signal_connect(vsink, "new-buffer", G_CALLBACK(new_video_buffer), NULL);
+	g_signal_connect(vsink, "new-buffer", G_CALLBACK(new_video_buffer), (gpointer)avidx);
 #ifdef AUDIO
 	asink = gst_bin_get_by_name(GST_BIN(pipeline), "asink");
 	/* Configure asink */

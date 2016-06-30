@@ -5,11 +5,11 @@ TOP=$(shell pwd)
 #SCRIPTS=$(wildcard scripts/*.sh)
 SCRIPTS = scripts/video.sh
 
-.PHONY : all pre clean build lib rtsp mosaic record upload mvr install scripts
+.PHONY : all pre clean build lib rtsp mosaic record upload mvr install scripts csicam
 
-all: clean pre lib rtsp mosaic record upload mvr install compress
+all: clean pre lib csicam rtsp mosaic record upload mvr install compress
 
-build: pre lib rtsp mosaic record upload mvr
+build: pre lib csicam rtsp mosaic record upload mvr
 
 pre:
 	@mkdir -p ${TOP}/${BINARES}
@@ -19,6 +19,7 @@ pre:
 scp:
 #	@${MAKE} -C gst $@
 	@${MAKE} -C lib $@
+	@${MAKE} -C csicam $@
 	@${MAKE} -C rtsp $@
 	@${MAKE} -C mosaic $@
 	@${MAKE} -C record $@
@@ -28,6 +29,7 @@ scp:
 
 install:
 	@${MAKE} -C lib $@
+	@${MAKE} -C csicam $@
 	@${MAKE} -C rtsp $@
 	@${MAKE} -C mosaic $@
 	@${MAKE} -C record $@
@@ -45,6 +47,7 @@ clean:
 	@rm -f ${TOP}/${BINARES}/${USER}/${ARCH}/*
 	@${MAKE} -C gst $@
 	@${MAKE} -C lib $@
+	@${MAKE} -C csicam $@
 	@${MAKE} -C rtsp $@
 	@${MAKE} -C mosaic $@
 	@${MAKE} -C record $@
@@ -57,6 +60,9 @@ gst:
 lib:
 	@${MAKE} -C $@
 	
+csicam:
+	@${MAKE} -C $@
+
 rtsp:
 	@${MAKE} -C $@
 

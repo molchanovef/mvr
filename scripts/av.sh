@@ -60,5 +60,5 @@ gst-launch filesrc location=${vfile} typefind=true \
 queue max-size-buffers=0 max-size-time=0 ! vpudec ! mfw_isink  \
 axis-left=$left axis-top=$top disp-width=$w disp-height=$h \
 demux. ! queue max-size-buffers=0 max-size-time=0 ! beepdec \
-! audioconvert ! alsasink &
+! audioconvert ! alsasink
 
