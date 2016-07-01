@@ -17,6 +17,8 @@
 	2. Encode frames with vpuenc for recording.
 */
 
+#define DW		800
+#define DH		480
 #define WIDTH	800
 #define HEIGHT	480
 #define FPS		30
@@ -113,7 +115,23 @@ int main(int argc, char* argv[])
 	gchar *descr;
 	GstCaps *caps;
 	GError *error = NULL;
-
+	int left, top, width, height;
+	
+	if(argc == 5)
+	{
+		left = atoi(argv[1]);
+		top = atoi(argv[2]);
+		width = atoi(argv[3]);
+		height = atoi(argv[4]);
+	}
+	else
+	{
+		left = 0;
+		top = 0;
+		width = DW;
+		height = DH;
+	}
+	
 	app = malloc(sizeof(Csicam));
 	if(app == NULL)
 	{
@@ -134,7 +152,7 @@ int main(int argc, char* argv[])
 	app->timer = g_timer_new();
 	g_timer_start(app->timer);
 
-	descr = g_strdup_printf ("appsrc name=appsrc ! mfw_isink");// axis-left=200 axis-top=120 disp-width=400 disp-height=240");
+	descr = g_strdup_printf ("appsrc name=appsrc ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", left, top, width, height);
 //	descr = g_strdup_printf ("appsrc name=appsrc ! vpuenc codec=0 ! avimux ! filesink name=filesink");
 //	descr = g_strdup_printf ("imxv4l2src ! vpuenc codec=0 ! avimux ! filesink name=filesink");
 	app->pipeline = gst_parse_launch (descr, &error);
