@@ -50,7 +50,7 @@ gboolean isSPSpacket(guint8 * paket);
 gboolean isMPEG4iFrame(guint8 * paket);
 gboolean isTimeout();
 void sig_handler(int signum);
-void searcIPinURL(char *url, char *camFolder);
+void searchIPinURL(char *url, char *camFolder);
 int createWorkFolder(char * workFolder);
 int createNewRecordFile(char * fn);
 void tvhIPCAMworkaround(GstBuffer *buffer);
@@ -388,7 +388,7 @@ int main(int argc, char* argv[])
 		strcpy(baseDir,argv[3]);
 		duration = atoi(argv[4]);
 		if(argc < 6)
-			searcIPinURL(url, camFolder);
+			searchIPinURL(url, camFolder);
 		else
 			strcpy(camFolder, argv[5]);
 	}
@@ -543,7 +543,7 @@ void sig_handler(int signum)
 #endif
 }
 
-void searcIPinURL(char *url, char *camFolder)
+void searchIPinURL(char *url, char *camFolder)
 {
 	int i;
 	char *p = url;

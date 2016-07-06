@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <libxml/parser.h>
+#include <libxml/HTMLparser.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <stdbool.h>
@@ -22,7 +23,6 @@ pthread_t pth_control;
 int run;
 int recEna, mosEna, uplEna;
 int camcnt;
-char *filename;
 pid_t uploadPid;
 
 const char *LAYER[] = {"SINGLE", "2x2", "3x3"};
@@ -32,11 +32,14 @@ layer_t mosaic = QUAD;
 typedef struct _Camera
 {
 	char *name;
-	char *url;
+	char *ipaddr;
+	char *login;
+	char *password;
 	char *decoder;
 	char *recdir;
 	char *rectime;
 	char *latency;
+	char *stream[3];
 	int position;
 	pid_t recPid;
 	pid_t mosPid;
@@ -58,6 +61,8 @@ int startMos(Camera *h);
 int startUpload(void);
 void toggle_mosaic(void);
 void shift_mosaic(unsigned int value);
+void addLoginPasswd(Camera *h);
+int mvr_get_streams(Camera *h);
 
 void stopUpload(void)
 {
@@ -76,11 +81,16 @@ void freeCamera(Camera *h)
 	if(h != NULL)
 	{
 		free(h->name);
-		free(h->url);
+		free(h->ipaddr);
+		free(h->login);
+		free(h->password);
 		free(h->decoder);
 		free(h->recdir);
 		free(h->rectime);
 		free(h->latency);
+		free(h->stream[0]);
+		free(h->stream[1]);
+		free(h->stream[2]);
 		free(h);
 	}
 }
@@ -137,6 +147,7 @@ int main(int argc, char **argv)
 {
     int			i, j, retVal;
 	bool		addCamera;
+//	char 		*filename;
 	Camera		*h;
 	Wifi		*w;
 	xmlDocPtr	doc;
@@ -212,27 +223,44 @@ int main(int argc, char **argv)
 				if(camera[i] == NULL) break;
 			h = malloc(sizeof(Camera));
 			memset(h, 0, sizeof(Camera));
+
 			h->name			= (char*)xmlGetProp(cur, (const xmlChar*)"name");
-			h->url			= (char*)xmlGetProp(cur, (const xmlChar*)"url");
+			h->stream[0]	= (char*)xmlGetProp(cur, (const xmlChar*)"stream0");
+			h->stream[1]	= (char*)xmlGetProp(cur, (const xmlChar*)"stream1");
+			h->stream[2]	= (char*)xmlGetProp(cur, (const xmlChar*)"stream2");
+			h->ipaddr		= (char*)xmlGetProp(cur, (const xmlChar*)"ipaddr");
+			h->login		= (char*)xmlGetProp(cur, (const xmlChar*)"login");
+			h->password		= (char*)xmlGetProp(cur, (const xmlChar*)"password");
 			h->decoder		= (char*)xmlGetProp(cur, (const xmlChar*)"decoder");
 			h->recdir		= (char*)xmlGetProp(cur, (const xmlChar*)"recdir");
 			h->rectime		= (char*)xmlGetProp(cur, (const xmlChar*)"rectime");
 			h->latency		= (char*)xmlGetProp(cur, (const xmlChar*)"latency");
 			h->recPid		= 0;
 			h->mosPid		= 0;
+
 			// Check dublicate cameras (url, name, position)
 			addCamera = true;
 			for(j = 0; j < camcnt; j++)
 			{
 				if( (strcmp(camera[j]->name, h->name) == 0) ||
-					(strcmp(camera[j]->url, h->url) == 0) )
+					(strcmp(camera[j]->ipaddr, h->ipaddr) == 0) )
 				{
 					printf("\n\t!!! ERROR !!! Dublicate camera found\n");
 					printf("\tCheck please name and url on your xml file.\n");
-					freeCamera(h);
 					addCamera = false;
 				}
 			}
+
+			if(h->stream[0] == NULL || h->stream[1] == NULL || h->stream[2] == NULL)
+			{
+				if(mvr_get_streams(h) != 0)
+					addCamera = false;
+			}
+			else
+			{
+				addLoginPasswd(h);
+			}
+
 			if(addCamera)
 			{
 				camcnt++;
@@ -240,6 +268,10 @@ int main(int argc, char **argv)
 					h->position = camcnt;
 				camera[i] = h;
 //				int avi_set_stream(int idx, int format, int width, int height)
+			}
+			else
+			{
+				freeCamera(h);
 			}
 		}
 		if ((!xmlStrcmp(cur->name, (const xmlChar *)"WiFi")))
@@ -418,7 +450,7 @@ int startRec(Camera *h)
 		}
 		if(h->recPid == 0)
 		{
-			execlp("record", " ", h->url, h->decoder, h->recdir, h->rectime, h->name, NULL);
+			execlp("record", " ", h->stream[0], h->decoder, h->recdir, h->rectime, h->name, NULL);
 		}
 	}
 	return 0;
@@ -444,7 +476,7 @@ int startMos(Camera *h)
 			p = malloc(1);
 			sprintf(m, "%d", mosaic);
 			sprintf(p, "%d", h->position);
-			execlp("mosaic", " ", h->url, h->name, h->decoder, m, p, h->latency, NULL);
+			execlp("mosaic", " ", h->stream[1], h->name, h->decoder, m, p, h->latency, NULL);
 			free(m);
 			free(p);
 		}
@@ -573,5 +605,185 @@ void shift_mosaic(unsigned int value)
 			if(cnt == wndcnt || cnt == camcnt) break;//in case of camcnt < wndcnt
 		}
 	}
+}
+#if 1
+static void searchIPinURL(char *url, char *ip)
+{
+	char *p = url;
+	int index = 7;
+
+	if(strncmp(url,"rtsp://",index) == 0)
+	{
+		p = url + index;
+		strcpy(ip, p);
+	//	printf("%s %s %s\n", TAG, __func__, ip);
+	}
+}
+#endif
+static void searchStreamInString(Camera *h, const char* str)
+{
+	int i, j;
+	char *rtsp;
+	char params[3][32];
+	
+	for(i = 0; i < 3; i++)
+	{
+		sprintf(params[0], "streamurl%d", i+1);
+		sprintf(params[1], "streamname%d", i+1);
+		sprintf(params[2], "stream%dname", i+1);
+
+//		printf("%s %s search nodes: %s len %d, %s len %d, %s len %d\n",
+//		 TAG, __func__, params[0], strlen(params[0]), params[1], strlen(params[1]), params[2], strlen(params[2]));
+		for(j = 0; j < 3; j++)
+		{
+			if(strncmp(str, params[j], strlen(params[j])) == 0)
+			{
+//				printf("compare %s %s\n",str, params[j]);
+				rtsp = strstr(str, "rtsp");
+				if(rtsp)
+				{
+					if(h->stream[i] == NULL)
+					{
+						h->stream[i] = malloc(256);
+						if(strcpy(h->stream[i], rtsp))
+						{
+//							printf("%s\n", h->stream[i]);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+//Add login and password in streams
+void addLoginPasswd(Camera *h)
+{
+	int i;
+	char *p;
+	char tmp[256];
+	printf("%s %s\n", TAG, __func__);
+	for(i = 0; i < 3; i++)
+	{
+		p = h->stream[i];
+		if(p)
+		{
+			if(strncmp(h->stream[i], "rtsp://", 7) == 0)
+			{
+				p += 7;
+				strcpy(tmp, p);
+				printf("strlen h->stream[%d] %d\n", i, strlen(h->stream[i]));
+				free(h->stream[i]);
+				h->stream[i] = malloc(256);
+				sprintf(h->stream[i], "rtsp://%s:%s@%s", h->login, h->password, tmp);
+			}
+		}
+	}
+	printf("Streams for %s:\n", h->name);
+	for(i = 0; i < 3; i++)
+		printf("\t%s\n", h->stream[i]);
+}
+
+//Parse ini.htm for get streams url
+int mvr_get_streams(Camera *h)
+{
+	char str[1024];
+//	char ip[64];
+	char filename[16] = "ini.htm";
+	htmlDocPtr	doc;
+	htmlNodePtr	currentNode;
+	bool beginOfNode = true;
+	xmlAttrPtr attrNode;
+	int i;
+	FILE *fd;
+
+	printf("%s %s\n", TAG, __func__);
+//	searchIPinURL(h->url, ip);
+
+	sprintf(str, "wget http://%s:%s@%s/ini.htm -O %s", h->login, h->password, h->ipaddr, filename);
+	system(str);
+
+	doc = htmlParseFile(filename, NULL);
+	if(!doc) return -1;
+	currentNode = doc->children;
+
+	while (currentNode)
+	{
+		// output node if it is an element
+		if (beginOfNode)
+		{
+		    if (currentNode->type == XML_ELEMENT_NODE)
+		    {
+
+		        for (attrNode = currentNode->properties;
+		             attrNode; attrNode = attrNode->next)
+		        {
+		            xmlNodePtr contents = attrNode->children;
+
+		            printf("%s='%s'\n", attrNode->name, contents->content);
+		        }
+
+		    }
+		    else if (currentNode->type == XML_TEXT_NODE)
+		    {
+				searchStreamInString(h, (const char*)currentNode->content);
+//	            printf("%s\n", currentNode->content);
+		    }
+		    else if (currentNode->type == XML_COMMENT_NODE)
+		    {
+		        printf("/* %s */\n", currentNode->name);
+		    }
+		}
+
+		if (beginOfNode && currentNode->children)
+		{
+		    currentNode = currentNode->children;
+		    beginOfNode = true;
+		}
+		else if (beginOfNode && currentNode->next)
+		{
+		    currentNode = currentNode->next;
+		    beginOfNode = true;
+		}
+		else
+		{
+		    currentNode = currentNode->parent;
+		    beginOfNode = false; // avoid going to siblings or children
+
+		    // close node
+		    if (currentNode && currentNode->type == XML_ELEMENT_NODE)
+		    {
+//		        printf("</%s>", currentNode->name);
+		    }
+		}
+	}
+
+	char *p;
+	//Workaround for DM355
+	if(h->stream[0] == NULL)
+	{
+		fd = fopen(filename, "r+b");
+		while(fgets(str, sizeof(str), fd))
+		{
+			searchStreamInString(h, (const char*)str);
+		}
+		fclose(fd);
+		//Remove <br>
+		for(i = 0; i < 3; i++)
+		{
+			p = h->stream[i];
+			while(*p != '<') p++;
+			*p = 0;
+		}
+	}
+
+	addLoginPasswd(h);
+	xmlFreeDoc(doc);
+	unlink(filename);
+
+	if(h->stream[0] == NULL || h->stream[1] == NULL || h->stream[2] == NULL)
+		return -2;
+
+	return 0;
 }
 

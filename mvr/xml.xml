@@ -14,15 +14,9 @@
 <MVR>
 	<Camera
 		name="Acer_based"
-		url="rtsp://admin:9999@192.168.11.37:8555/Stream2"
-		decoder = "h264"
-		recdir="/media/sda1/MVR"
-		rectime="60"
-		latency="0">
-	</Camera>
-	<Camera
-		name="Dome_Gray"
-		url="rtsp://admin:admin@192.168.11.93/0"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
@@ -30,23 +24,19 @@
 	</Camera>
 	<Camera
 		name="Ivideon_Stream_1"
-		url="rtsp://admin:9999@192.168.11.67:8554/Stream1"
+		ipaddr="192.168.11.67"
+		login="admin"
+		password="9999"
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
 		latency="0">
 	</Camera> 
 	<Camera
-		name="Ivideon_Stream_2"
-		url="rtsp://admin:9999@192.168.11.67:8555/Stream2"
-		decoder = "h264"
-		recdir="/media/sda1/MVR"
-		rectime="60"
-		latency="0">
-	</Camera>
-	<Camera
-		name="Vadim_2"
-		url="rtsp://admin:9999@192.168.11.91:8555/Stream2"
+		name="Vadim"
+		ipaddr="192.168.11.91"
+		login="admin"
+		password="9999"
 		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
@@ -54,7 +44,12 @@
 	</Camera>
 	<Camera
 		name="LLAMP_251"
-		url="rtsp://admin:9999@192.168.11.251:554/mpeg4"
+		ipaddr="192.168.11.251"
+		login="admin"
+		password="9999"
+		stream0="rtsp://192.168.11.251:554/mpeg4"
+		stream1="rtsp://192.168.11.251:8554/mpeg4"
+		stream2="rtsp://192.168.11.251:8550/mjpeg"
 		decoder = "mpeg4"
 		recdir="/media/sda1/MVR"
 		rectime="60"
@@ -62,7 +57,12 @@
 	</Camera>
 	<Camera
 		name="LLAMP_252"
-		url="rtsp://admin:9999@192.168.11.252:554/mpeg4"
+		ipaddr="192.168.11.252"
+		login="admin"
+		password="9999"
+		stream0="rtsp://192.168.11.252:554/mpeg4"
+		stream1="rtsp://192.168.11.252:554/mpeg4"
+		stream2="rtsp://192.168.11.252:8550/mjpeg"
 		decoder = "mpeg4"
 		recdir="/media/sda1/MVR"
 		rectime="60"
@@ -70,19 +70,30 @@
 	</Camera>
 	<Camera
 		name="LLAMP_253"
-		url="rtsp://admin:9999@192.168.11.253:554/mpeg4"
+		ipaddr="192.168.11.253"
+		login="admin"
+		password="9999"
+		stream0="rtsp://192.168.11.253:554/mpeg4"
+		stream1="rtsp://192.168.11.253:554/mpeg4"
+		stream2="rtsp://192.168.11.253:8550/mjpeg"
 		decoder = "mpeg4"
 		recdir="/media/sda1/MVR"
 		rectime="60"
 		latency="0">
 	</Camera>
-<!--	<Camera
-		name="Camera_168"
-		url="rtsp://admin:9999@192.168.1.168:8554/Stream1"
+	<Camera
+		name="Dome_Gray"
+		ipaddr="192.168.11.93"
+		login="admin"
+		password="admin"
+		stream0="rtsp://192.168.11.93:554/0"
+		stream1="rtsp://192.168.11.93:554/0"
+		stream2="rtsp://192.168.11.93:554/0"
+		decoder = "h264"
 		recdir="/media/sda1/MVR"
 		rectime="60"
-		latency="3000">
-	</Camera> -->
+		latency="0">
+	</Camera> 
 	<WiFi
 		ssid="TvHelp_CCTV"
 		password="SMikhail">

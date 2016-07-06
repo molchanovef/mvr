@@ -22,12 +22,12 @@ gst: early version of mosaic.
 
 upload: monitoring Wi-Fi or 3G network for upload stored video files to FTP server on-the-go.
 
-mvr: parse xml file with all board settings: name, rtsp url of IP cameras for rtsp, record and mosaic, decoder type for mosaic, files duration, directory to save for record.
-Record application use stream from IPCAM with high resolution and quality.
-Mosaic applications use low quality stream for show video on the screen.
-After implement rtsp application mosaic will get frames from RAM stored by rtsp application.
+mvr: parse xml file with all settings: name, rtsp url of IP cameras for rtsp, record and mosaic, decoder type for mosaic, files duration, directory to save for record.
+Record uses stream from IPCAM with high resolution and quality.
+Mosaic uses low quality stream for show video on the screen.
+After implement rtsp, mosaic will receive frames from RAM stored by rtsp.
 Also start upload application.
-Monitoring all applications and restart them if fails.
+Monitoring all applications and restarting them if fails.
 
 doc: MVR.txt - Technical Specification.
 

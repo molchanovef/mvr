@@ -1,0 +1,8 @@
+#Get all camera params
+wget http://admin:9999@192.168.11.67/ini.htm
+
+#Get specified parameter
+wget http://admin:9999@192.168.11.67/ini.htm?streamurl1
+wget http://admin:9999@192.168.11.67/ini.htm?streamurl2
+wget http://admin:9999@192.168.11.67/ini.htm?streamurl3
+
