@@ -467,6 +467,8 @@ finish:
 	gst_element_set_state (pipeline, GST_STATE_NULL);
 
 //	g_print ("%s Deleting pipeline\n", TAG);
+	gst_buffer_unref(FirstPacket);
+	FirstPacket = NULL;
 	gst_object_unref (GST_OBJECT (pipeline));
 	gst_object_unref (GST_OBJECT (rtspsrc));
 	gst_object_unref (GST_OBJECT (vsink));
@@ -660,7 +662,7 @@ void tvhIPCAMworkaround(GstBuffer *buffer)
 		if(buffer->data[i] == 0 && buffer->data[i+1] == 0 && buffer->data[i+2] == 0 && buffer->data[i+3] == 1 &&
 		   buffer->data[i+4] == 0 && buffer->data[i+5] == 0 && buffer->data[i+6] == 0 && buffer->data[i+7] == 1)
 		{
-			g_print("%s Tvhelp IPCAM PPS double '0 0 0 1' at (%d) position in first SPS packet\n", TAG, i);
+//			g_print("%s Tvhelp IPCAM PPS double '0 0 0 1' at (%d) position in first SPS packet\n", TAG, i);
 			memcpy(&buffer->data[i],&buffer->data[i+4],buffer->size - i - 4);
 		}
 	}
