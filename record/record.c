@@ -21,7 +21,9 @@
 #define TAG			"RECORD:"
 
 GstBuffer *SPSPacket;
-GstBuffer *FirstPacket;
+GstBuffer *PPSPacket;
+GstBuffer *savedPacket;
+GstBuffer *IFrame;
 GMainLoop *main_loop;  /* GLib's Main Loop */
 GstElement 	*pipeline, *rtspsrc, *vsink;
 GstElement	*pipeline_out, *vsrc, *filesink, *parse, *mux;
@@ -47,7 +49,9 @@ char recfile[256];
 int run_pipeline_out(void);
 
 int cpRecToFile(void);
-gboolean isH264Frame(guint8 * paket);
+gboolean isSPSpacket(guint8 * paket);
+gboolean isPPSpacket(guint8 * paket);
+gboolean isH264iFrame(guint8 * paket);
 gboolean isMPEG4iFrame(guint8 * paket);
 gboolean isTimeout();
 void sig_handler(int signum);
@@ -271,35 +275,66 @@ int run_pipeline_out()
 static void new_video_buffer (GstElement *sink) {
 	GstBuffer *buffer;
 	GstFlowReturn ret = GST_FLOW_OK;
-
+	gboolean sps = FALSE;
+	gboolean ih264 = FALSE;
+	gboolean impeg4 = FALSE;
+	
 	if(push_to_vsrc)
 	{
-		if(SPSPacket)//if SPS PPS packet was saved in previous pipeline
+		if(savedPacket)//if SPS PPS packet was saved in previous pipeline
 		{
-			buffer = gst_buffer_copy(SPSPacket);
-			gst_buffer_unref(SPSPacket);
-			SPSPacket = NULL;
+			buffer = gst_buffer_copy(savedPacket);
+			gst_buffer_unref(savedPacket);
+			savedPacket = NULL;
 //			g_print ("|");
+		}
+		else if(IFrame)//if SPS PPS packet was saved in previous pipeline
+		{
+			buffer = gst_buffer_copy(IFrame);
+			gst_buffer_unref(IFrame);
+			IFrame = NULL;
+//			g_print ("I");
 		}
 		else
 		{
 			/* Retrieve the buffer */
 			g_signal_emit_by_name (vsink, "pull-buffer", &buffer, NULL);
+			if((strcmp(decoder, "h264") == 0) && isSPSpacket(buffer->data))
+			{
+				tvhIPCAMworkaround(buffer);
+				if(SPSPacket)
+				{
+					gst_buffer_unref(SPSPacket);
+					SPSPacket = NULL;
+				}
+				SPSPacket = gst_buffer_copy(buffer);
+//				g_print("save SPS\n");
+			}
+			if((strcmp(decoder, "h264") == 0) && isPPSpacket(buffer->data))
+			{
+				PPSPacket = gst_buffer_copy(buffer);
+//				g_print("save PPS\n");
+			}
 //			g_print ("*");
 		}
 		if (buffer)
 		{
-			if(!FirstPacket)
-				FirstPacket = gst_buffer_copy(buffer);
-			if( ((strcmp(decoder, "h264") == 0) && isH264Frame(buffer->data)) || 
-				((strcmp(decoder, "mpeg4") == 0) && isMPEG4iFrame(buffer->data)) )
+			if((strcmp(decoder, "h264") == 0) && isSPSpacket(buffer->data))	sps = TRUE;
+			if((strcmp(decoder, "h264") == 0) && isH264iFrame(buffer->data)) ih264 = TRUE;
+			if((strcmp(decoder, "mpeg4") == 0) && isMPEG4iFrame(buffer->data)) impeg4 = TRUE;
 			
+			if(sps || ih264 || impeg4)
 			{
-				tvhIPCAMworkaround(buffer);
 				//Save SPS packet for next pipeline and stop pushing data to current pipeline
 				if(isTimeout())
 				{
-					SPSPacket = gst_buffer_copy(FirstPacket);
+					if(ih264)
+					{
+						savedPacket = gst_buffer_copy(SPSPacket);
+						IFrame = gst_buffer_copy(buffer);
+					}
+					else
+						savedPacket = gst_buffer_copy(buffer);
 					//send eos to vsrc of out pipeline
 					GstEvent* event = gst_event_new_eos();
 					gst_element_send_event (vsrc, event);
@@ -467,8 +502,6 @@ finish:
 	gst_element_set_state (pipeline, GST_STATE_NULL);
 
 //	g_print ("%s Deleting pipeline\n", TAG);
-	gst_buffer_unref(FirstPacket);
-	FirstPacket = NULL;
 	gst_object_unref (GST_OBJECT (pipeline));
 	gst_object_unref (GST_OBJECT (rtspsrc));
 	gst_object_unref (GST_OBJECT (vsink));
@@ -484,30 +517,31 @@ finish:
 /*
 Search for SPS in stream for correct split stream on files
 */
-gboolean isH264Frame(guint8 * paket)
+gboolean isSPSpacket(guint8 * packet)
+{
+	int nal_type = packet[4] & 0x1F;
+	if (nal_type == 7)
+		return TRUE;
+	return FALSE;
+}
+gboolean isPPSpacket(guint8 * packet)
+{
+	int nal_type = packet[4] & 0x1F;
+	if (nal_type == 8)
+		return TRUE;
+	return FALSE;
+}
+gboolean isH264iFrame(guint8 * packet)
 {
 	int RTPHeaderBytes = 3;
-//	int fragment_type = paket[RTPHeaderBytes + 0] & 0x1F;
-	int nal_type = paket[RTPHeaderBytes + 1] & 0x1F;
-//	int start_bit = paket[RTPHeaderBytes + 1] & 0x80;
+//	int fragment_type = packet[RTPHeaderBytes + 0] & 0x1F;
+	int nal_type = packet[RTPHeaderBytes + 1] & 0x1F;
+//	int start_bit = packet[RTPHeaderBytes + 1] & 0x80;
 //	g_print("%s fragment %x nal_type %x start_bit %x\n", __func__, fragment_type, nal_type, start_bit);
-	if (nal_type == 5 || nal_type == 7)
-	{
+	if (nal_type == 5)
 		return TRUE;
-	}
 	return FALSE;
-/*
-	unsigned char fragment_type = paket[RTPHeaderBytes+0]&0x1F;
-	unsigned char nal_type = paket[RTPHeaderBytes+1]&0x1F;
-	unsigned char start_bit = paket[RTPHeaderBytes+1]&0x80;
-
-	if( ((fragment_type == 28 || fragment_type == 29) && nal_type == 5 && start_bit == 128) || fragment_type == 5 )
-		return TRUE;
-
-	return FALSE;
-*/
 }
-
 gboolean isMPEG4iFrame(guint8 *packet)
 {
 	if( packet[0]==0x00 && packet[1]==0x00 && packet[2]==0x01 && packet[3]==0xB6 && !(packet[4]&0xC0) )
@@ -662,7 +696,7 @@ void tvhIPCAMworkaround(GstBuffer *buffer)
 		if(buffer->data[i] == 0 && buffer->data[i+1] == 0 && buffer->data[i+2] == 0 && buffer->data[i+3] == 1 &&
 		   buffer->data[i+4] == 0 && buffer->data[i+5] == 0 && buffer->data[i+6] == 0 && buffer->data[i+7] == 1)
 		{
-//			g_print("%s Tvhelp IPCAM PPS double '0 0 0 1' at (%d) position in first SPS packet\n", TAG, i);
+			g_print("%s Tvhelp IPCAM PPS double '0 0 0 1' at (%d) position in first SPS packet\n", TAG, i);
 			memcpy(&buffer->data[i],&buffer->data[i+4],buffer->size - i - 4);
 		}
 	}
