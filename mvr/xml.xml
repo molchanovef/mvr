@@ -23,7 +23,7 @@
 		latency="0">
 	</Camera>
 	<Camera
-		name="Ivideon_Stream_1"
+		name="Ivideon"
 		ipaddr="192.168.11.67"
 		login="admin"
 		password="9999"
@@ -74,7 +74,7 @@
 		login="admin"
 		password="9999"
 		stream0="rtsp://192.168.11.253:554/mpeg4"
-		stream1="rtsp://192.168.11.253:554/mpeg4"
+		stream1="rtsp://192.168.11.253:8554/mpeg4"
 		stream2="rtsp://192.168.11.253:8550/mjpeg"
 		decoder = "mpeg4"
 		recdir="/media/sda1/MVR"

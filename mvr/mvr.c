@@ -606,7 +606,7 @@ void shift_mosaic(unsigned int value)
 		}
 	}
 }
-#if 1
+#if 0
 static void searchIPinURL(char *url, char *ip)
 {
 	char *p = url;
@@ -672,7 +672,6 @@ void addLoginPasswd(Camera *h)
 			{
 				p += 7;
 				strcpy(tmp, p);
-				printf("strlen h->stream[%d] %d\n", i, strlen(h->stream[i]));
 				free(h->stream[i]);
 				h->stream[i] = malloc(256);
 				sprintf(h->stream[i], "rtsp://%s:%s@%s", h->login, h->password, tmp);

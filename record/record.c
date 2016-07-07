@@ -21,6 +21,7 @@
 #define TAG			"RECORD:"
 
 GstBuffer *SPSPacket;
+GstBuffer *FirstPacket;
 GMainLoop *main_loop;  /* GLib's Main Loop */
 GstElement 	*pipeline, *rtspsrc, *vsink;
 GstElement	*pipeline_out, *vsrc, *filesink, *parse, *mux;
@@ -46,7 +47,7 @@ char recfile[256];
 int run_pipeline_out(void);
 
 int cpRecToFile(void);
-gboolean isSPSpacket(guint8 * paket);
+gboolean isH264Frame(guint8 * paket);
 gboolean isMPEG4iFrame(guint8 * paket);
 gboolean isTimeout();
 void sig_handler(int signum);
@@ -288,7 +289,9 @@ static void new_video_buffer (GstElement *sink) {
 		}
 		if (buffer)
 		{
-			if( ((strcmp(decoder, "h264") == 0) && isSPSpacket(buffer->data)) || 
+			if(!FirstPacket)
+				FirstPacket = gst_buffer_copy(buffer);
+			if( ((strcmp(decoder, "h264") == 0) && isH264Frame(buffer->data)) || 
 				((strcmp(decoder, "mpeg4") == 0) && isMPEG4iFrame(buffer->data)) )
 			
 			{
@@ -296,7 +299,7 @@ static void new_video_buffer (GstElement *sink) {
 				//Save SPS packet for next pipeline and stop pushing data to current pipeline
 				if(isTimeout())
 				{
-					SPSPacket = gst_buffer_copy(buffer);
+					SPSPacket = gst_buffer_copy(FirstPacket);
 					//send eos to vsrc of out pipeline
 					GstEvent* event = gst_event_new_eos();
 					gst_element_send_event (vsrc, event);
@@ -479,18 +482,28 @@ finish:
 /*
 Search for SPS in stream for correct split stream on files
 */
-gboolean isSPSpacket(guint8 * paket)
+gboolean isH264Frame(guint8 * paket)
 {
 	int RTPHeaderBytes = 3;
 //	int fragment_type = paket[RTPHeaderBytes + 0] & 0x1F;
 	int nal_type = paket[RTPHeaderBytes + 1] & 0x1F;
 //	int start_bit = paket[RTPHeaderBytes + 1] & 0x80;
 //	g_print("%s fragment %x nal_type %x start_bit %x\n", __func__, fragment_type, nal_type, start_bit);
-	if (nal_type == 7)
+	if (nal_type == 5 || nal_type == 7)
 	{
 		return TRUE;
 	}
 	return FALSE;
+/*
+	unsigned char fragment_type = paket[RTPHeaderBytes+0]&0x1F;
+	unsigned char nal_type = paket[RTPHeaderBytes+1]&0x1F;
+	unsigned char start_bit = paket[RTPHeaderBytes+1]&0x80;
+
+	if( ((fragment_type == 28 || fragment_type == 29) && nal_type == 5 && start_bit == 128) || fragment_type == 5 )
+		return TRUE;
+
+	return FALSE;
+*/
 }
 
 gboolean isMPEG4iFrame(guint8 *packet)
