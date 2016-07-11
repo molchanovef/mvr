@@ -59,7 +59,7 @@ void sig_handler(int signum);
 int startRec(Camera *h);
 int startMos(Camera *h);
 int startUpload(void);
-void toggle_mosaic(void);
+void toggle_mosaic(unsigned int value);
 void shift_mosaic(unsigned int value);
 void addLoginPasswd(Camera *h);
 int mvr_get_streams(Camera *h);
@@ -382,7 +382,7 @@ void print_help(char *argv)
 void* control_func (void *arg)
 {
 	char c;
-	unsigned int shift;
+	unsigned int value;
 	while(run)
 	{
 //		c = getc(stdin);
@@ -397,7 +397,11 @@ void* control_func (void *arg)
 				break;
 			case 'l':
 				if(mosEna)
-					toggle_mosaic();
+				{
+					printf("Enter mosaic type %d for %s %d for %s %d for %s>", SINGLE, LAYER[0], QUAD, LAYER[1], NINE, LAYER[2]);
+					scanf("%d",&value);
+					toggle_mosaic(value);
+				}
 				else
 					printf("\tMOSAIC DISABLED!!!\n");
 				break;
@@ -405,8 +409,8 @@ void* control_func (void *arg)
 				if(mosEna)
 				{
 					printf("Enter shift value in range 1-%d>", camcnt);
-					scanf("%d",&shift);
-					shift_mosaic(shift);
+					scanf("%d",&value);
+					shift_mosaic(value);
 				}
 				else
 					printf("\tMOSAIC DISABLED!!!\n");
@@ -513,12 +517,13 @@ static void stop_mosaic(bool clearPos)
 	}
 }
 
-void toggle_mosaic(void)
+void toggle_mosaic(unsigned int type)
 {
 	int i;
 	Camera *h;
-	mosaic++;
-	if (mosaic > NINE) mosaic = SINGLE;
+	if(type < SINGLE || type > NINE)
+		return;
+	mosaic = type;
 	printf("%s Toggle mosaic mode to %s\n", TAG, LAYER[mosaic-1]);
 	stop_mosaic(true);
 	//Assign positions for cameras
