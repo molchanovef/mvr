@@ -281,7 +281,8 @@ static void new_video_buffer (GstElement *sink) {
 	
 	if(push_to_vsrc)
 	{
-		if(savedPacket)//if SPS PPS packet was saved in previous pipeline
+		//First insert saved packet into new pipeline (SPS for h264) IFrame for MPEG4
+		if(savedPacket)
 		{
 			buffer = gst_buffer_copy(savedPacket);
 			gst_buffer_unref(savedPacket);
@@ -299,6 +300,9 @@ static void new_video_buffer (GstElement *sink) {
 		{
 			/* Retrieve the buffer */
 			g_signal_emit_by_name (vsink, "pull-buffer", &buffer, NULL);
+//			g_print ("*");
+
+			//Save SPS anyway: then SPS arrived only one time or periodically
 			if((strcmp(decoder, "h264") == 0) && isSPSpacket(buffer->data))
 			{
 				tvhIPCAMworkaround(buffer);
@@ -310,12 +314,12 @@ static void new_video_buffer (GstElement *sink) {
 				SPSPacket = gst_buffer_copy(buffer);
 //				g_print("save SPS\n");
 			}
+			//Save PPS (not used now)
 			if((strcmp(decoder, "h264") == 0) && isPPSpacket(buffer->data))
 			{
 				PPSPacket = gst_buffer_copy(buffer);
 //				g_print("save PPS\n");
 			}
-//			g_print ("*");
 		}
 		if (buffer)
 		{

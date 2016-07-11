@@ -66,15 +66,7 @@ int main(int argc, char* argv[])
 	gchar *descr;
 	GError *error = NULL;
 	Mosaic *h;
-	
-	h = malloc(sizeof(Mosaic));
-	if(h == NULL)
-	{
-		g_print("%s memory allocation error\n", TAG);
-		exit(1);
-	}
-	mosaic = h;
-	
+
 	if(argc < 7)
 		print_help(argv[0]);
 	else
@@ -86,6 +78,14 @@ int main(int argc, char* argv[])
 		pos = atoi(argv[5]);
 		latency = atoi(argv[6]);
 	}
+
+	h = malloc(sizeof(Mosaic));
+	if(h == NULL)
+	{
+		g_print("%s memory allocation error\n", TAG);
+		exit(1);
+	}
+	mosaic = h;
 		
 //	printf("%s name %s url %s decoder %s type %d position %d latency %d\n", TAG, name, url, decoder, type, pos, latency);
 	width = DW/type; height = DH/type;
