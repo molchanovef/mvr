@@ -18,6 +18,9 @@
 #define TAG			"MVR:"
 #define MIN(a,b)	((a)<(b)?(a):(b))
 #define XMLFILE		"/tvh/xml.xml"
+#define RECDIR		"/media/sda1/MVR"
+#define RECTIME		60				//seconds
+#define LATENCY		0				//ms
 
 pthread_t pth_control;
 int run;
@@ -36,9 +39,6 @@ typedef struct _Camera
 	char *login;
 	char *password;
 	char *decoder;
-	char *recdir;
-	char *rectime;
-	char *latency;
 	char *stream[3];
 	int position;
 	pid_t recPid;
@@ -85,9 +85,6 @@ void freeCamera(Camera *h)
 		free(h->login);
 		free(h->password);
 		free(h->decoder);
-		free(h->recdir);
-		free(h->rectime);
-		free(h->latency);
 		free(h->stream[0]);
 		free(h->stream[1]);
 		free(h->stream[2]);
@@ -232,9 +229,6 @@ int main(int argc, char **argv)
 			h->login		= (char*)xmlGetProp(cur, (const xmlChar*)"login");
 			h->password		= (char*)xmlGetProp(cur, (const xmlChar*)"password");
 			h->decoder		= (char*)xmlGetProp(cur, (const xmlChar*)"decoder");
-			h->recdir		= (char*)xmlGetProp(cur, (const xmlChar*)"recdir");
-			h->rectime		= (char*)xmlGetProp(cur, (const xmlChar*)"rectime");
-			h->latency		= (char*)xmlGetProp(cur, (const xmlChar*)"latency");
 			h->recPid		= 0;
 			h->mosPid		= 0;
 
@@ -301,9 +295,8 @@ int main(int argc, char **argv)
 			if(mosEna)
 				startMos(h);
 /*			printf("\t%s Camera[%d]: %s\n", TAG, i, h->name);
-			printf("\t\turl: %s decoder: %s\n", h->url, h->decoder);
-			printf("\t\trecdir: %s\n", h->recdir);
-			printf("\t\trectime: %s latency: %s position: %d\n", h->rectime, h->latency, h->position);
+			printf("\t\tipaddr: %s decoder: %s\n", h->ipaddr, h->decoder);
+			printf("\t\tposition: %d\n", h->position);
 			printf("\t\trecPid: %d mosPid: %d\n", h->recPid, h->mosPid);
 */		}
 	}
@@ -438,32 +431,31 @@ void sig_handler(int signum)
 
 int startRec(Camera *h)
 {
-	if(h->rectime && h->recdir)
-	{
-		printf("%s Start recordig for camera %s\n", TAG, h->name);
+	char r[2];
+	printf("%s Start recordig for camera %s\n", TAG, h->name);
 
-		h->recPid = fork();
-		if(h->recPid == -1)
-		{
-			perror("fork"); /* произошла ошибка */
-			exit(1); /*выход из родительского процесса*/
-		}
-		if(h->recPid == 0)
-		{
-			execlp("record", " ", h->stream[0], h->decoder, h->recdir, h->rectime, h->name, NULL);
-		}
+	h->recPid = fork();
+	if(h->recPid == -1)
+	{
+		perror("fork"); /* произошла ошибка */
+		exit(1); /*выход из родительского процесса*/
+	}
+	if(h->recPid == 0)
+	{
+		sprintf(r, "%d", RECTIME);
+		execlp("record", " ", h->stream[0], h->decoder, RECDIR, r, h->name, NULL);
 	}
 	return 0;
 }
 
 int startMos(Camera *h)
 {
-	char* m;
-	char* p;
-
+	char m[2];
+	char p[2];
+	char l[2];
 	if( h->position != 0 )
 	{
-		printf("%s Start mosaic %s for camera %s in position %d\n", TAG, LAYER[mosaic-1], h->name, h->position);
+		printf("%s Start mosaic %s for %s at position %d\n", TAG, LAYER[mosaic-1], h->name, h->position);
 		h->mosPid = fork();
 		if(h->mosPid == -1)
 		{
@@ -472,13 +464,10 @@ int startMos(Camera *h)
 		}
 		if(h->mosPid == 0)
 		{
-			m = malloc(1);
-			p = malloc(1);
 			sprintf(m, "%d", mosaic);
 			sprintf(p, "%d", h->position);
-			execlp("mosaic", " ", h->stream[1], h->name, h->decoder, m, p, h->latency, NULL);
-			free(m);
-			free(p);
+			sprintf(l, "%d", LATENCY);
+			execlp("mosaic", " ", h->stream[1], h->name, h->decoder, m, p, l, NULL);
 		}
 	}
 	return 0;
