@@ -289,7 +289,7 @@ static void new_video_buffer (GstElement *sink) {
 			savedPacket = NULL;
 //			g_print ("|");
 		}
-		else if(IFrame)//if SPS PPS packet was saved in previous pipeline
+		else if(IFrame)//Insert saved I-frame
 		{
 			buffer = gst_buffer_copy(IFrame);
 			gst_buffer_unref(IFrame);

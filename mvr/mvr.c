@@ -13,6 +13,7 @@
 #include "getch.h"
 #include "avi.h"
 
+#define CHECK_DUBLICATE
 #define CAM_NUM		32
 #define WIFI_NUM	32
 #define TAG			"MVR:"
@@ -142,9 +143,9 @@ const char *get_filename_ext(const char *filename) {
 
 int main(int argc, char **argv)
 {
-    int			i, j, retVal;
+    int			i, retVal;
 	bool		addCamera;
-//	char 		*filename;
+	char 		filename[64] = {0};
 	Camera		*h;
 	Wifi		*w;
 	xmlDocPtr	doc;
@@ -172,21 +173,21 @@ int main(int argc, char **argv)
 					print_usage(argv[0]);
 				}
 			}
-/*			else
+			else
 			{
-				filename = argv[i];
-			}*/
+				sprintf(filename,"%s",argv[i]);
+			}
     	}
     }
 /*    else
     {
     	print_usage(argv[0]);
     }
-    	
-    if(filename == NULL)
+*/
+    if(strlen(filename) == 0)
     {
-    	printf("\n\t%s ERROR!!! Please specify filename\n\n", TAG);
-    	print_usage(argv[0]);
+		printf("\n\t%s Using default xml file %s\n\n", TAG, XMLFILE);
+		sprintf(filename,"%s",XMLFILE);
     }
 	else
 	{
@@ -196,11 +197,11 @@ int main(int argc, char **argv)
 	    	print_usage(argv[0]);
 		}
 	}
-*/	
-    printf("%s filename: %s recEna = %d mosEna = %d uplEna = %d\n", TAG, XMLFILE, recEna, mosEna, uplEna);
+
+    printf("%s filename: %s recEna = %d mosEna = %d uplEna = %d\n", TAG, filename, recEna, mosEna, uplEna);
 
 	avi_init();
-	doc = xmlParseFile(XMLFILE);
+	doc = xmlParseFile(filename);
 	if(doc == NULL)
 	{
 		printf("\t\n%s ERROR!!! Not a valid xml file\n\n", TAG);
@@ -234,17 +235,18 @@ int main(int argc, char **argv)
 
 			// Check dublicate cameras (url, name, position)
 			addCamera = true;
-			for(j = 0; j < camcnt; j++)
+#ifdef CHECK_DUBLICATE
+			for(i = 0; i < camcnt; i++)
 			{
-				if( (strcmp(camera[j]->name, h->name) == 0) ||
-					(strcmp(camera[j]->ipaddr, h->ipaddr) == 0) )
+				if( (strcmp(camera[i]->name, h->name) == 0) ||
+					(strcmp(camera[i]->ipaddr, h->ipaddr) == 0) )
 				{
 					printf("\n\t!!! ERROR !!! Dublicate camera found\n");
 					printf("\tCheck please name and url on your xml file.\n");
 					addCamera = false;
 				}
 			}
-
+#endif
 			if(h->stream[0] == NULL || h->stream[1] == NULL || h->stream[2] == NULL)
 			{
 				if(mvr_get_streams(h) != 0)

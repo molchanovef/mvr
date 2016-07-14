@@ -4,9 +4,6 @@
 		name		- Camera name for create directory fo record fies
 		url			- rtsp stream url 
 		decoder		- h264 or mpeg4
-		recdir		- directory for save record files
-		rectime		- time in seconds to split video stream to separate files
-		latency		- gstreamer rtsp element parameter.
 	If missing rectime or recdir recording for camera doesn't start
 	WiFi element:
 		ssid, password.
@@ -26,6 +23,16 @@
 		password="9999"
 		decoder = "h264">
 	</Camera> 
+	<Camera
+		name="Dome_Gray"
+		ipaddr="192.168.11.93"
+		login="admin"
+		password="admin"
+		stream0="rtsp://192.168.11.93:554/0"
+		stream1="rtsp://192.168.11.93:554/0"
+		stream2="rtsp://192.168.11.93:554/0"
+		decoder = "h264">
+	</Camera>
 	<Camera
 		name="Vadim"
 		ipaddr="192.168.11.91"
@@ -63,16 +70,6 @@
 		stream2="rtsp://192.168.11.253:8550/mjpeg"
 		decoder = "mpeg4">
 	</Camera>
-	<Camera
-		name="Dome_Gray"
-		ipaddr="192.168.11.93"
-		login="admin"
-		password="admin"
-		stream0="rtsp://192.168.11.93:554/0"
-		stream1="rtsp://192.168.11.93:554/0"
-		stream2="rtsp://192.168.11.93:554/0"
-		decoder = "h264">
-	</Camera> 
 	<WiFi
 		ssid="TvHelp_CCTV"
 		password="SMikhail">

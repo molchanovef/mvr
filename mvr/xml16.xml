@@ -1,0 +1,190 @@
+<?xml version="1.0"?>
+	<!--
+	Camera element: 
+		name		- Camera name for create directory fo record fies
+		url			- rtsp stream url 
+		decoder		- h264 or mpeg4
+	If missing rectime or recdir recording for camera doesn't start
+	WiFi element:
+		ssid, password.
+	-->
+<MVR>
+	<Camera
+		name="Acer_based"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based2"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based3"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based4"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based5"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based6"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based7"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based8"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based9"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based10"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based11"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based12"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based13"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based14"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based15"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Acer_based16"
+		ipaddr="192.168.11.37"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+<!--	<Camera
+		name="Ivideon"
+		ipaddr="192.168.11.67"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera> 
+	<Camera
+		name="Dome_Gray"
+		ipaddr="192.168.11.93"
+		login="admin"
+		password="admin"
+		stream0="rtsp://192.168.11.93:554/0"
+		stream1="rtsp://192.168.11.93:554/0"
+		stream2="rtsp://192.168.11.93:554/0"
+		decoder = "h264">
+	</Camera> 
+	<Camera
+		name="Vadim"
+		ipaddr="192.168.11.91"
+		login="admin"
+		password="9999"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="LLAMP_251"
+		ipaddr="192.168.11.251"
+		login="admin"
+		password="9999"
+		stream0="rtsp://192.168.11.251:554/mpeg4"
+		stream1="rtsp://192.168.11.251:8554/mpeg4"
+		stream2="rtsp://192.168.11.251:8550/mjpeg"
+		decoder = "mpeg4">
+	</Camera>
+	<Camera
+		name="LLAMP_252"
+		ipaddr="192.168.11.252"
+		login="admin"
+		password="9999"
+		stream0="rtsp://192.168.11.252:554/mpeg4"
+		stream1="rtsp://192.168.11.252:554/mpeg4"
+		stream2="rtsp://192.168.11.252:8550/mjpeg"
+		decoder = "mpeg4">
+	</Camera>
+	<Camera
+		name="LLAMP_253"
+		ipaddr="192.168.11.253"
+		login="admin"
+		password="9999"
+		stream0="rtsp://192.168.11.253:554/mpeg4"
+		stream1="rtsp://192.168.11.253:8554/mpeg4"
+		stream2="rtsp://192.168.11.253:8550/mjpeg"
+		decoder = "mpeg4">
+	</Camera> -->
+	<WiFi
+		ssid="TvHelp_CCTV"
+		password="SMikhail">
+	</WiFi>
+	<WiFi
+		ssid="MEF"
+		password="brigantina">
+	</WiFi>
+	<WiFi
+		ssid="vit"
+		password="1234567890">
+	</WiFi>
+</MVR>
