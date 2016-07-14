@@ -4,14 +4,19 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <string.h>
-#include <scd.h>
-#include <pthread.h>
 #include <gst/gst.h>
-#include <scd.h>
+#ifdef BTRLIB
 #include <btr.h>
+#include <pthread.h>
+#else
+#include <scd.h>
+#endif
 
 /*
 	This program captures frames from built-in csi camera through scd driver.
+	There are two ways to do it with USE_BTRLIB in Makefile:
+	1. Using btr from ipclib
+	2. Using bayer2rgb plugin
 	Creates appsrc gstreamer pipeline with tee for two tasks:
 	1. Show live video with mfw_isink
 	2. Encode frames with vpuenc for recording.
@@ -19,9 +24,6 @@
 
 #define DW		800
 #define DH		480
-#define WIDTH	800
-#define HEIGHT	480
-#define FPS		30
 #define BPP		3
 #define FREE(p) {if(p != NULL) free(p);}
 #define TAG "CSICAM: "
@@ -38,11 +40,16 @@ typedef struct _Csicam
 	guint sourceid;
 
 	GTimer *timer;
-
-	int fd_scd;
+#ifdef BTRLIB
 	int width;
 	int height;
 	int fps;
+#else
+	mt9_setup_t sensor;
+	int fd_scd;
+	int gain;
+	char *sensorBuffer;
+#endif
 } Csicam;
 
 Csicam *app;
@@ -75,6 +82,7 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer ptr)
 	return TRUE;
 }
 
+#ifdef BTRLIB
 //static gboolean read_data (Csicam * app)
 int appsrc_push(char* argb, int size)
 {
@@ -84,7 +92,7 @@ int appsrc_push(char* argb, int size)
 
 //	g_print("argb %d size %d\n", argb, size);
 
-	if(size == WIDTH*HEIGHT*BPP && argb != NULL)
+	if(size == app->width*app->height*BPP && argb != NULL)
 	{
 		buffer = gst_buffer_new();
 		GST_BUFFER_SIZE (buffer) = size;
@@ -108,6 +116,63 @@ int appsrc_push(char* argb, int size)
     //  g_signal_emit_by_name (app->appsrc, "end-of-stream", &ret);
     return FALSE;
 }
+#else
+static gboolean read_data (Csicam * app)
+{
+    guint len;
+    GstFlowReturn ret;
+	GstBuffer *buffer;
+	int bytes_read;
+
+	len = app->sensor.w*app->sensor.h;
+	bytes_read = pread(app->fd_scd, app->sensorBuffer, len, 0);
+	if(bytes_read == len)
+	{
+		buffer = gst_buffer_new();
+		GST_BUFFER_SIZE (buffer) = len;
+		GST_BUFFER_MALLOCDATA (buffer) = g_malloc (len);
+		GST_BUFFER_DATA (buffer) = GST_BUFFER_MALLOCDATA (buffer);
+
+		memcpy(buffer->data, app->sensorBuffer, len);
+
+//	    g_print ("feed buffer");
+	    g_signal_emit_by_name (app->appsrc, "push-buffer", buffer, &ret);
+	    gst_buffer_unref (buffer);
+	}
+
+    //  g_signal_emit_by_name (app->appsrc, "end-of-stream", &ret);
+    return TRUE;
+}
+
+/* This signal callback is called when appsrc needs data, we add an idle handler
+ * to the mainloop to start pushing data into the appsrc */
+static void
+start_feed (GstElement * pipeline, guint size, Csicam * app)
+{
+  if (app->sourceid == 0) {
+//    g_print ("start feeding");
+    app->sourceid = g_idle_add ((GSourceFunc) read_data, app);
+  }
+}
+
+/* This callback is called when appsrc has enough data and we can stop sending.
+ * We remove the idle handler from the mainloop */
+static void
+stop_feed (GstElement * pipeline, Csicam * app)
+{
+  if (app->sourceid != 0) {
+//    g_print ("stop feeding");
+    g_source_remove (app->sourceid);
+    app->sourceid = 0;
+  }
+}
+#endif
+
+void print_usage(char *name)
+{
+	printf("Usage %s <sensor width> <sensor height> <sensor fps> <gain> output window options [left] [top] [width] [height]\n", name);
+	exit(1);
+}
 
 int main(int argc, char* argv[])
 {
@@ -115,23 +180,30 @@ int main(int argc, char* argv[])
 	gchar *descr;
 	GstCaps *caps;
 	GError *error = NULL;
-	int left, top, width, height;
+	int sw, sh, fps, gain, left, top, width, height;
+
+	left = 0;
+	top = 0;
+	width = DW;
+	height = DH;
 	
-	if(argc == 5)
-	{
-		left = atoi(argv[1]);
-		top = atoi(argv[2]);
-		width = atoi(argv[3]);
-		height = atoi(argv[4]);
-	}
+	if(argc < 5)
+		print_usage(argv[0]);
 	else
 	{
-		left = 0;
-		top = 0;
-		width = DW;
-		height = DH;
+		sw = atoi(argv[1]);
+		sh = atoi(argv[2]);
+		fps = atoi(argv[3]);
+		gain = atoi(argv[4]);
+		if(argc == 9)
+		{
+			left = atoi(argv[5]);
+			top = atoi(argv[6]);
+			width = atoi(argv[7]);
+			height = atoi(argv[8]);
+		}
 	}
-	
+
 	app = malloc(sizeof(Csicam));
 	if(app == NULL)
 	{
@@ -139,9 +211,50 @@ int main(int argc, char* argv[])
 		goto finish;
 	}
 
-	ret = btr_init(WIDTH, HEIGHT, FPS, B2RGB_SIMPLE, appsrc_push);
+#ifdef BTRLIB
+	printf("using btrlib\n");
+	app->width = sw;
+	app->height = sh;
+	app->fps = fps;
+	ret = btr_init(sw, sh, fps, gain, B2RGB_SIMPLE, appsrc_push);
 	if(ret != 0)
 		goto finish;
+#else
+	printf("using bayer2rgb plugin\n");
+    if ((app->fd_scd = open("/dev/scd",O_RDWR)) < 0) {
+		printf("Failed to open scd\n");
+		goto finish;
+    }
+    else
+    {
+		app->sensor.cs[0] = -1;
+		app->sensor.rs[0] = -1;
+		app->sensor.cs[1] = -1;
+		app->sensor.rs[1] = -1;
+		app->sensor.fps = fps;
+		app->sensor.w = sw;
+		app->sensor.h = sh;
+		ret = ioctl(app->fd_scd,IOCTL_SCD_CAMERA_SETUP,&app->sensor);
+		if(ret !=0)
+		{
+			printf("SCD return %d on CAMERA_SETUP\n",ret);
+			goto finish;
+		}
+		app->gain = gain;
+		ret = ioctl(app->fd_scd,IOCTL_SCD_CAMERA_GAIN,app->gain);
+		if(ret !=0)
+		{
+			printf("SCD return %d on CAMERA_GAIN\n",ret);
+			goto finish;
+		}
+	}
+	app->sensorBuffer = malloc(app->sensor.w*app->sensor.h);
+	if(app->sensorBuffer == NULL)
+	{
+		printf("Memory allocation error\n");
+		goto finish;
+	}
+#endif
 
 	signal(SIGINT, sig_handler);
 
@@ -150,26 +263,40 @@ int main(int argc, char* argv[])
 
 	app->main_loop = g_main_loop_new (NULL, FALSE);
 	app->timer = g_timer_new();
-	g_timer_start(app->timer);
-
+#ifdef BTRLIB
 	descr = g_strdup_printf ("appsrc name=appsrc ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", left, top, width, height);
+#else
+	descr = g_strdup_printf ("appsrc name=appsrc ! bayer2rgb ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", left, top, width, height);
+#endif
 //	descr = g_strdup_printf ("appsrc name=appsrc ! vpuenc codec=0 ! avimux ! filesink name=filesink");
 //	descr = g_strdup_printf ("imxv4l2src ! vpuenc codec=0 ! avimux ! filesink name=filesink");
 	app->pipeline = gst_parse_launch (descr, &error);
 	if (error == NULL)
 	{
-		app->appsrc = gst_bin_get_by_name(GST_BIN(app->pipeline), "appsrc");
 //		filesink = gst_bin_get_by_name(GST_BIN(pipeline), "filesink");
-
+		app->appsrc = gst_bin_get_by_name(GST_BIN(app->pipeline), "appsrc");
 		/* set the caps on the source */
+#ifdef BTRLIB
 		caps = gst_caps_new_simple (
 		"video/x-raw-rgb",
-		"framerate", GST_TYPE_FRACTION, FPS, 1,
+		"framerate", GST_TYPE_FRACTION, fps, 1,
 		"bpp",G_TYPE_INT,BPP*8,
 		"depth",G_TYPE_INT,BPP*8,
-		"width", G_TYPE_INT, WIDTH,
-		"height", G_TYPE_INT, HEIGHT,
+		"width", G_TYPE_INT, sw,
+		"height", G_TYPE_INT, sh,
 		NULL);
+#else
+		g_signal_connect (app->appsrc, "need-data", G_CALLBACK (start_feed), app);
+		g_signal_connect (app->appsrc, "enough-data", G_CALLBACK (stop_feed), app);
+		/* set the caps on the bayer2rgb */
+		caps = gst_caps_new_simple (
+		"video/x-raw-bayer",
+		"framerate", GST_TYPE_FRACTION, app->sensor.fps, 1,
+		"format",G_TYPE_STRING, "grbg",
+		"width", G_TYPE_INT, app->sensor.w,
+		"height", G_TYPE_INT, app->sensor.h,
+		NULL);
+#endif
 		g_object_set (G_OBJECT (app->appsrc), "caps", caps, NULL);
 		g_object_set (G_OBJECT (app->appsrc),
 				"stream-type", 0,
@@ -204,7 +331,10 @@ int main(int argc, char* argv[])
 
 
 finish:
+#ifndef BTRLIB
 	close(app->fd_scd);
+	FREE(app->sensorBuffer);
+#endif
 	FREE(app);
 	return 0;
 }

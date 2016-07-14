@@ -45,10 +45,9 @@ void finish(void)
 	FREE(argb);
 }
 
-static int btr_setup_cam(void)
+static int btr_setup_cam(int gain)
 {
 	int ret;
-	int gain = 40;
 	ret = ioctl(fd_scd,IOCTL_SCD_CAMERA_SETUP,&setup);
 	if(ret !=0)
 	{
@@ -248,7 +247,7 @@ void* cb_func(void *arg)
 	return NULL;
 }
 
-int btr_init(int w, int h, int fps, int mode, btr_get_frame_cb cb)
+int btr_init(int w, int h, int fps, int gain, int mode, btr_get_frame_cb cb)
 {
 	int ret;
 	
@@ -304,7 +303,7 @@ int btr_init(int w, int h, int fps, int mode, btr_get_frame_cb cb)
 		return fd_scd;
     }
 
-	btr_setup_cam();
+	btr_setup_cam(gain);
 
 	run = 1;
 	
@@ -321,12 +320,12 @@ int btr_init(int w, int h, int fps, int mode, btr_get_frame_cb cb)
 	ret = pthread_create(&pth_cb, NULL, &cb_func, NULL);
 	if (ret != 0)
 	{
-		printf("\ncan't create fb thread :[%s]", strerror(ret));
+		printf("\ncan't create cb thread :[%s]", strerror(ret));
 		finish();
 		return ret;
 	}
 	else
-	    printf("\n Fb thread created successfully\n");
+	    printf("\n Cb thread created successfully\n");
 
 	return 0;
 }

@@ -22,4 +22,5 @@ endif
 clean:
 	-$(RM) -f ipc/*.o
 	-$(RM) -f ipc/*.a
+	-$(RM) -f *.so
 
