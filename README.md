@@ -2,7 +2,11 @@ This project a set of simple programs, designed with gstreamer-0.10.36 and Frees
 MVR designed for record video from IP (and embedded) cameras, store it in separated files and upload video files with Wi-Fi or 3G to FTP server.
 
 csicam: Conflicting with gstreamer because both use IPU.
-captures frames from built-in csi camera through scd driver
+captures frames from built-in csi camera through scd driver.
+There are two ways for convert bayer to rgb:
+1. Using btr form lib/ipc/btr.c
+2. Using gstreamer plugin bayer2rgb
+Switching in Makefile USE_BTRLIB.
 Creates appsrc gstreamer pipeline with tee for two tasks:
 1. Showing live video with mfw_isink
 2. Encode frames with vpuenc for recording.
