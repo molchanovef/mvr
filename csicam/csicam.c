@@ -234,6 +234,7 @@ int main(int argc, char* argv[])
 		app->sensor.fps = fps;
 		app->sensor.w = sw;
 		app->sensor.h = sh;
+		app->sensor.skip = 0;
 		ret = ioctl(app->fd_scd,IOCTL_SCD_CAMERA_SETUP,&app->sensor);
 		if(ret !=0)
 		{
