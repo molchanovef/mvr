@@ -170,7 +170,8 @@ stop_feed (GstElement * pipeline, Csicam * app)
 
 void print_usage(char *name)
 {
-	printf("Usage %s <sensor width> <sensor height> <sensor fps> <gain> output window options [left] [top] [width] [height]\n", name);
+	printf("Usage %s <width> <height> <fps> <gain> <skip 0 or 1> <bin 0 or 1>\n", name);
+	printf("OPTIONS: output window [left] [top] [width] [height]\n");
 	exit(1);
 }
 
@@ -180,14 +181,14 @@ int main(int argc, char* argv[])
 	gchar *descr;
 	GstCaps *caps;
 	GError *error = NULL;
-	int sw, sh, fps, gain, left, top, width, height;
+	int sw, sh, fps, gain, left, top, width, height, skip, bin;
 
 	left = 0;
 	top = 0;
 	width = DW;
 	height = DH;
 	
-	if(argc < 5)
+	if(argc < 7)
 		print_usage(argv[0]);
 	else
 	{
@@ -195,15 +196,22 @@ int main(int argc, char* argv[])
 		sh = atoi(argv[2]);
 		fps = atoi(argv[3]);
 		gain = atoi(argv[4]);
-		if(argc == 9)
+		skip = atoi(argv[5]);
+		bin = atoi(argv[6]);
+		if(argc == 11)
 		{
-			left = atoi(argv[5]);
-			top = atoi(argv[6]);
-			width = atoi(argv[7]);
-			height = atoi(argv[8]);
+			left = atoi(argv[7]);
+			top = atoi(argv[8]);
+			width = atoi(argv[9]);
+			height = atoi(argv[10]);
 		}
 	}
 
+	if(skip > 1) skip = 1;
+	if(skip < 0) skip = 0;
+	if(bin > 1) bin = 1;
+	if(bin < 0) bin = 0;
+	
 	app = malloc(sizeof(Csicam));
 	if(app == NULL)
 	{
@@ -234,7 +242,8 @@ int main(int argc, char* argv[])
 		app->sensor.fps = fps;
 		app->sensor.w = sw;
 		app->sensor.h = sh;
-		app->sensor.skip = 0;
+		app->sensor.skip = skip;
+		app->sensor.bin = bin;
 		ret = ioctl(app->fd_scd,IOCTL_SCD_CAMERA_SETUP,&app->sensor);
 		if(ret !=0)
 		{
@@ -264,10 +273,15 @@ int main(int argc, char* argv[])
 
 	app->main_loop = g_main_loop_new (NULL, FALSE);
 	app->timer = g_timer_new();
+
 #ifdef BTRLIB
 	descr = g_strdup_printf ("appsrc name=appsrc ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", left, top, width, height);
 #else
-	descr = g_strdup_printf ("appsrc name=appsrc ! bayer2rgb ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", left, top, width, height);
+	#ifdef GRAYMODE
+		descr = g_strdup_printf ("appsrc name=appsrc ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", left, top, width, height);
+	#else
+		descr = g_strdup_printf ("appsrc name=appsrc ! bayer2rgb ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", left, top, width, height);
+	#endif
 #endif
 //	descr = g_strdup_printf ("appsrc name=appsrc ! vpuenc codec=0 ! avimux ! filesink name=filesink");
 //	descr = g_strdup_printf ("imxv4l2src ! vpuenc codec=0 ! avimux ! filesink name=filesink");
@@ -289,6 +303,16 @@ int main(int argc, char* argv[])
 #else
 		g_signal_connect (app->appsrc, "need-data", G_CALLBACK (start_feed), app);
 		g_signal_connect (app->appsrc, "enough-data", G_CALLBACK (stop_feed), app);
+#ifdef GRAYMODE
+		caps = gst_caps_new_simple (
+		"video/x-raw-gray",
+		"framerate", GST_TYPE_FRACTION, fps, 1,
+		"bpp",G_TYPE_INT,8,
+		"depth",G_TYPE_INT,8,
+		"width", G_TYPE_INT, sw,
+		"height", G_TYPE_INT, sh,
+		NULL);
+#else
 		/* set the caps on the bayer2rgb */
 		caps = gst_caps_new_simple (
 		"video/x-raw-bayer",
@@ -297,6 +321,8 @@ int main(int argc, char* argv[])
 		"width", G_TYPE_INT, app->sensor.w,
 		"height", G_TYPE_INT, app->sensor.h,
 		NULL);
+#endif
+
 #endif
 		g_object_set (G_OBJECT (app->appsrc), "caps", caps, NULL);
 		g_object_set (G_OBJECT (app->appsrc),

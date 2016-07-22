@@ -7,6 +7,7 @@ OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=csicam
 SCRIPTS=
 #USE_BTRLIB=1
+GRAY_MODE=1
 ifdef CROSS
 SYSROOTFS=/home/mef/iMX6/fsl-release-bsp/build-dfb/tmp/sysroots/imx6qsabresd
 CFLAGS += -DCROSS
@@ -16,6 +17,9 @@ CFLAGS += -I${SYSROOTFS}/usr/include/gstreamer-0.10 \
 		 -I${SYSROOTFS}/usr/include/libxml2 \
 		 -I${INCLUDE_DIR}
 LDFLAGS = -lgstreamer-0.10 -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lxml2 -lglib-2.0
+ifdef GRAY_MODE
+CFLAGS += -DGRAYMODE
+endif
 ifdef USE_BTRLIB
 CFLAGS += -DBTRLIB
 LDFLAGS += -lpthread -L${LIB_DIR} -lipc

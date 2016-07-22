@@ -11,8 +11,8 @@ typedef struct mt9_setup_s
 	unsigned int w;//width
 	unsigned int h;//height
 	unsigned fps;
-	unsigned short skip;
-	unsigned short bin;
+	unsigned int skip;
+	unsigned int bin;
 }mt9_setup_t;
 
 
