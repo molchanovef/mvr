@@ -50,6 +50,7 @@ typedef struct _Csicam
 	int gain;
 	char *sensorBuffer;
 #endif
+	int grayMode;
 } Csicam;
 
 Csicam *app;
@@ -83,7 +84,6 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer ptr)
 }
 
 #ifdef BTRLIB
-//static gboolean read_data (Csicam * app)
 int appsrc_push(char* argb, int size)
 {
     GstFlowReturn ret;
@@ -117,13 +117,18 @@ int appsrc_push(char* argb, int size)
     return FALSE;
 }
 #else
+#if 0
 static gboolean read_data (Csicam * app)
 {
     guint len;
     GstFlowReturn ret;
 	GstBuffer *buffer;
 	int bytes_read;
-
+	gdouble ms;
+	
+    ms = g_timer_elapsed(app->timer, NULL);
+    if (ms > 1.0/(gdouble)app->sensor.fps) {
+        g_timer_start(app->timer);
 	len = app->sensor.w*app->sensor.h;
 	bytes_read = pread(app->fd_scd, app->sensorBuffer, len, 0);
 	if(bytes_read == len)
@@ -139,6 +144,9 @@ static gboolean read_data (Csicam * app)
 	    g_signal_emit_by_name (app->appsrc, "push-buffer", buffer, &ret);
 	    gst_buffer_unref (buffer);
 	}
+    return TRUE;
+	}
+    usleep(1000000/app->sensor.fps);
 
     //  g_signal_emit_by_name (app->appsrc, "end-of-stream", &ret);
     return TRUE;
@@ -167,10 +175,38 @@ stop_feed (GstElement * pipeline, Csicam * app)
   }
 }
 #endif
+static void cb_need_data (GstElement *appsrc)
+{
+    guint len;
+    GstFlowReturn ret;
+	GstBuffer *buffer;
+	int bytes_read;
+
+	len = app->sensor.w*app->sensor.h;
+	bytes_read = pread(app->fd_scd, app->sensorBuffer, len, 0);
+	if(bytes_read < 0)
+	{
+		g_main_loop_quit (app->main_loop);
+	}
+	else
+	{
+		buffer = gst_buffer_new();
+		GST_BUFFER_SIZE (buffer) = len;
+		GST_BUFFER_MALLOCDATA (buffer) = g_malloc (len);
+		GST_BUFFER_DATA (buffer) = GST_BUFFER_MALLOCDATA (buffer);
+
+		memcpy(buffer->data, app->sensorBuffer, len);
+
+//	    g_print ("feed buffer");
+	    g_signal_emit_by_name (app->appsrc, "push-buffer", buffer, &ret);
+	    gst_buffer_unref (buffer);
+	}
+}
+#endif
 
 void print_usage(char *name)
 {
-	printf("Usage %s <width> <height> <fps> <gain> <skip 0 or 1> <bin 0 or 1>\n", name);
+	printf("Usage %s <width> <height> <fps> <gain> <skip 0 or 1> <bin 0 or 1> <grayMode 0 or 1>\n", name);
 	printf("OPTIONS: output window [left] [top] [width] [height]\n");
 	exit(1);
 }
@@ -181,14 +217,22 @@ int main(int argc, char* argv[])
 	gchar *descr;
 	GstCaps *caps;
 	GError *error = NULL;
-	int sw, sh, fps, gain, left, top, width, height, skip, bin;
+	int sw, sh, fps, gain, left, top, width, height, skip, bin, grayMode;
 
 	left = 0;
 	top = 0;
 	width = DW;
 	height = DH;
+
+	app = malloc(sizeof(Csicam));
+	if(app == NULL)
+	{
+		printf("Memory allocation error\n");
+		goto finish;
+	}
+	memset(app, 0, sizeof(Csicam));
 	
-	if(argc < 7)
+	if(argc < 8)
 		print_usage(argv[0]);
 	else
 	{
@@ -198,12 +242,13 @@ int main(int argc, char* argv[])
 		gain = atoi(argv[4]);
 		skip = atoi(argv[5]);
 		bin = atoi(argv[6]);
-		if(argc == 11)
+		grayMode = atoi(argv[7]);
+		if(argc == 12)
 		{
-			left = atoi(argv[7]);
-			top = atoi(argv[8]);
-			width = atoi(argv[9]);
-			height = atoi(argv[10]);
+			left = atoi(argv[8]);
+			top = atoi(argv[9]);
+			width = atoi(argv[10]);
+			height = atoi(argv[11]);
 		}
 	}
 
@@ -212,13 +257,6 @@ int main(int argc, char* argv[])
 	if(bin > 1) bin = 1;
 	if(bin < 0) bin = 0;
 	
-	app = malloc(sizeof(Csicam));
-	if(app == NULL)
-	{
-		printf("Memory allocation error\n");
-		goto finish;
-	}
-
 #ifdef BTRLIB
 	printf("using btrlib\n");
 	app->width = sw;
@@ -277,11 +315,10 @@ int main(int argc, char* argv[])
 #ifdef BTRLIB
 	descr = g_strdup_printf ("appsrc name=appsrc ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", left, top, width, height);
 #else
-	#ifdef GRAYMODE
+	if(grayMode)
 		descr = g_strdup_printf ("appsrc name=appsrc ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", left, top, width, height);
-	#else
+	else
 		descr = g_strdup_printf ("appsrc name=appsrc ! bayer2rgb ! mfw_isink axis-left=%d axis-top=%d disp-width=%d disp-height=%d", left, top, width, height);
-	#endif
 #endif
 //	descr = g_strdup_printf ("appsrc name=appsrc ! vpuenc codec=0 ! avimux ! filesink name=filesink");
 //	descr = g_strdup_printf ("imxv4l2src ! vpuenc codec=0 ! avimux ! filesink name=filesink");
@@ -301,28 +338,31 @@ int main(int argc, char* argv[])
 		"height", G_TYPE_INT, sh,
 		NULL);
 #else
-		g_signal_connect (app->appsrc, "need-data", G_CALLBACK (start_feed), app);
-		g_signal_connect (app->appsrc, "enough-data", G_CALLBACK (stop_feed), app);
-#ifdef GRAYMODE
-		caps = gst_caps_new_simple (
-		"video/x-raw-gray",
-		"framerate", GST_TYPE_FRACTION, fps, 1,
-		"bpp",G_TYPE_INT,8,
-		"depth",G_TYPE_INT,8,
-		"width", G_TYPE_INT, sw,
-		"height", G_TYPE_INT, sh,
-		NULL);
-#else
-		/* set the caps on the bayer2rgb */
-		caps = gst_caps_new_simple (
-		"video/x-raw-bayer",
-		"framerate", GST_TYPE_FRACTION, app->sensor.fps, 1,
-		"format",G_TYPE_STRING, "grbg",
-		"width", G_TYPE_INT, app->sensor.w,
-		"height", G_TYPE_INT, app->sensor.h,
-		NULL);
-#endif
-
+		g_signal_connect (app->appsrc, "need-data", G_CALLBACK (cb_need_data), NULL);
+//		g_signal_connect (app->appsrc, "need-data", G_CALLBACK (start_feed), app);
+//		g_signal_connect (app->appsrc, "enough-data", G_CALLBACK (stop_feed), app);
+		if(grayMode)
+		{
+			caps = gst_caps_new_simple (
+			"video/x-raw-gray",
+			"framerate", GST_TYPE_FRACTION, fps, 1,
+			"bpp",G_TYPE_INT,8,
+			"depth",G_TYPE_INT,8,
+			"width", G_TYPE_INT, sw,
+			"height", G_TYPE_INT, sh,
+			NULL);
+		}
+		else
+		{
+			/* set the caps on the bayer2rgb */
+			caps = gst_caps_new_simple (
+			"video/x-raw-bayer",
+			"framerate", GST_TYPE_FRACTION, app->sensor.fps, 1,
+			"format",G_TYPE_STRING, "grbg",
+			"width", G_TYPE_INT, app->sensor.w,
+			"height", G_TYPE_INT, app->sensor.h,
+			NULL);
+		}
 #endif
 		g_object_set (G_OBJECT (app->appsrc), "caps", caps, NULL);
 		g_object_set (G_OBJECT (app->appsrc),
