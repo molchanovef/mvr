@@ -1,3 +1,4 @@
+TOP=../
 -include ../Makefile.rules
 
 # -print-search-dirs
