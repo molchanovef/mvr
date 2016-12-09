@@ -21,9 +21,9 @@ LIB_DIR=${TOP}/lib/
 INSTALL_DIR = ${TOP}/${BINARES}/${USER}/${ARCH}
 
 #debian
-#TARGET=root@192.168.1.8:/root
+#TARGET=root@192.168.1.7:/root
 #yocto
 TARGET=root@192.168.1.7:/home/root
-#TARGET_LIB=root@192.168.1.7:/usr/lib
+TARGET_LIB=root@192.168.1.7:/usr/lib
 
 

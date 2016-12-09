@@ -4,7 +4,7 @@
 		name		- Camera name for create directory fo record fies
 		url			- rtsp stream url 
 		decoder		- h264 or mpeg4
-	If missing rectime or recdir recording for camera doesn't start
+	If missing rectime or recdir, recording for camera doesn't start
 	WiFi element:
 		ssid, password.
 	-->
@@ -31,6 +31,14 @@
 		stream0="rtsp://192.168.11.93:554/0"
 		stream1="rtsp://192.168.11.93:554/0"
 		stream2="rtsp://192.168.11.93:554/0"
+		decoder = "h264">
+	</Camera>
+	<Camera
+		name="Serg1"
+		ipaddr="192.168.11.66"
+		login="root"
+		password="root"
+		stream0="rtsp://192.168.11.66/camera1"
 		decoder = "h264">
 	</Camera>
 	<Camera
@@ -82,4 +90,8 @@
 		ssid="vit"
 		password="1234567890">
 	</WiFi>
+	<Display
+		width="1920"
+		height="1080">
+	</Display>
 </MVR>

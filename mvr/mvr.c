@@ -53,7 +53,15 @@ typedef struct _Wifi
 	char *password;
 } Wifi;
 
-Wifi *wifi[WIFI_NUM] = {NULL};
+Wifi	*wifi[WIFI_NUM] = {NULL};
+
+typedef struct _Disp
+{
+	char *width;
+	char *height;
+} Disp;
+
+Disp *disp = NULL;
 
 void* control_func (void *arg);
 void sig_handler(int signum);
@@ -279,6 +287,15 @@ int main(int argc, char **argv)
 			w->password = (char*)xmlGetProp(cur, (const xmlChar*)"password");
 			wifi[i] 	= w;
 		}
+		if ((!xmlStrcmp(cur->name, (const xmlChar *)"Display")))
+		{
+			if(disp == NULL)
+			{
+				disp = malloc(sizeof(Disp));
+				disp->width		= (char*)xmlGetProp(cur, (const xmlChar*)"width");
+				disp->height	= (char*)xmlGetProp(cur, (const xmlChar*)"height");
+			}
+		}
 		cur = cur->next;
 	}
 
@@ -473,7 +490,7 @@ int startMos(Camera *h)
 			sprintf(m, "%d", mosaic);
 			sprintf(p, "%d", h->position);
 			sprintf(l, "%d", LATENCY);
-			execlp("mosaic", " ", h->stream[1], h->name, h->decoder, m, p, l, NULL);
+			execlp("mosaic", " ", h->stream[1], h->name, h->decoder, m, p, l, disp->width, disp->height, NULL);
 		}
 	}
 	return 0;

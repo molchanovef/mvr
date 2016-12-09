@@ -6,8 +6,8 @@
 #include <glib.h>
 #include "avi.h"
 
-#define DW		800
-#define DH		480
+//#define DW		800
+//#define DH		480
 #define TAG		"MOSAIC:"
 
 typedef struct _Mosaic
@@ -60,14 +60,14 @@ int main(int argc, char* argv[])
 	char name[1024] = {0};
 	char url[1024] = {0};
 	char decoder[16] = {0};
-	int left, top, width, height;
+	int left, top, width, height, dw, dh;
 /*	const gchar *nano_str;
 	guint major, minor, micro, nano;*/
 	gchar *descr;
 	GError *error = NULL;
 	Mosaic *h;
 
-	if(argc < 7)
+	if(argc < 9)
 		print_help(argv[0]);
 	else
 	{
@@ -77,6 +77,8 @@ int main(int argc, char* argv[])
 		type = atoi(argv[4]);
 		pos = atoi(argv[5]);
 		latency = atoi(argv[6]);
+		dw = atoi(argv[7]);
+		dh = atoi(argv[8]);
 	}
 
 	h = malloc(sizeof(Mosaic));
@@ -88,7 +90,7 @@ int main(int argc, char* argv[])
 	mosaic = h;
 		
 //	printf("%s name %s url %s decoder %s type %d position %d latency %d\n", TAG, name, url, decoder, type, pos, latency);
-	width = DW/type; height = DH/type;
+	width = dw/type; height = dh/type;
 	if( type == 1 )
 	{
 		left = 0; top = 0;
